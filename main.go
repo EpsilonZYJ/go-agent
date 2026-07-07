@@ -1,39 +1,56 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"go-agent/Model"
 	"os"
+
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
 import (
 	Const "go-agent/Const"
 )
 
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+type Config struct {
+	Model        string `json:"model"`
+	Url          string `json:"url"`
+	ApiKey       string `json:"api_key"`
+	SystemPrompt string `json:"system_prompt"`
+	CurDir       string `json:"cur_dir"`
 }
 
-var Model string
-var URL string
-var API_KEY string
-var SYSTEM_PROMPT string
-var CUR_DIR string
+var Cfg Config
+
+var Client anthropic.Client
 
 func InitAgent() error {
 	var err error
-	Model = os.Getenv("MODEL")
-	URL = os.Getenv("URL")
-	API_KEY = os.Getenv("API_KEY")
-	CUR_DIR, err = os.Getwd()
+	Cfg.Model = os.Getenv("MODEL")
+	Cfg.Url = os.Getenv("URL")
+	Cfg.ApiKey = os.Getenv("API_KEY")
+	Cfg.CurDir, err = os.Getwd()
 	if err != nil {
 		return fmt.Errorf("Get current directory failed: %v", err)
 	}
-	SYSTEM_PROMPT = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, don't explain.", CUR_DIR)
-	if Model == "" || URL == "" || API_KEY == "" {
+	Cfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, don't explain.", Cfg.CurDir)
+	if Cfg.Model == "" || Cfg.Url == "" || Cfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}
+
+	Client = anthropic.NewClient(
+		option.WithBaseURL(Cfg.Url),
+		option.WithAPIKey(Cfg.ApiKey),
+	)
 	return nil
+}
+
+func AgentLoop(messages []Model.Message) {
+	for {
+
+	}
 }
 
 func main() {
@@ -42,7 +59,22 @@ func main() {
 		fmt.Println(err)
 		os.Exit(Const.ExitEnvError)
 	}
-	for {
+	scanner := bufio.NewScanner(os.Stdin)
+	var history []Model.Message
 
+	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.`")
+	for {
+		fmt.Printf("\033[36mYou >> \033[0m")
+		scanner.Scan()
+		query := scanner.Text()
+		if query == "/exit" {
+			fmt.Println("Bye!")
+			break
+		}
+		history = append(history, Model.Message{
+			Role:    "user",
+			Content: query,
+		})
+		AgentLoop(history)
 	}
 }
