@@ -1,7 +1,8 @@
-package Model
+package Services
 
 import (
 	"fmt"
+	"go-agent/Model"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -11,7 +12,7 @@ type ChatRequest struct {
 	SystemPrompt []anthropic.TextBlockParam `json:"system_prompt,omitempty"`
 	Messages     []anthropic.MessageParam   `json:"message"`
 	MaxTokens    int64                      `json:"maxTokens"`
-	//Tools     []Tool                   `json:"tools"`
+	Tools        []anthropic.ToolUnionParam `json:"tools"`
 }
 
 func NewChatRequest(model string, maxTokens int64, systemPrompt string) *ChatRequest {
@@ -20,6 +21,7 @@ func NewChatRequest(model string, maxTokens int64, systemPrompt string) *ChatReq
 		SystemPrompt: NewSystemBlocks(systemPrompt),
 		Messages:     []anthropic.MessageParam{},
 		MaxTokens:    maxTokens,
+		Tools:        []anthropic.ToolUnionParam{},
 	}
 }
 
@@ -27,7 +29,7 @@ func NewSystemBlocks(prompt string) []anthropic.TextBlockParam {
 	return []anthropic.TextBlockParam{{Text: prompt}}
 }
 
-func (req *ChatRequest) AddMessages(message []Message) error {
+func (req *ChatRequest) AddMessages(message []Model.Message) error {
 	if req.Messages == nil {
 		req.Messages = []anthropic.MessageParam{}
 	}

@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+type Command struct {
+	Command string `json:"command"`
+}
+
 func executeCommand(command string) (string, error) {
 	cmd := exec.Command("bash", "-c", command)
 	output, err := cmd.CombinedOutput()
@@ -28,4 +32,8 @@ func RunBash(command string) (string, error) {
 		return "", err
 	}
 	return output, nil
+}
+
+func RegisterToolBash() {
+
 }
