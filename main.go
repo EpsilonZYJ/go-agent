@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"go-agent/Model"
 	"os"
@@ -14,41 +15,60 @@ import (
 	Const "go-agent/Const"
 )
 
-type Config struct {
-	Model        string `json:"model"`
+type SystemConfig struct {
 	Url          string `json:"url"`
 	ApiKey       string `json:"api_key"`
 	SystemPrompt string `json:"system_prompt"`
 	CurDir       string `json:"cur_dir"`
 }
 
-var Cfg Config
+type ModelConfig struct {
+	Model     string `json:"model"`
+	MaxTokens int64  `json:"maxTokens"`
+}
+
+var SysCfg SystemConfig
+var ModelCfg ModelConfig
 
 var Client anthropic.Client
 
 func InitAgent() error {
 	var err error
-	Cfg.Model = os.Getenv("MODEL")
-	Cfg.Url = os.Getenv("URL")
-	Cfg.ApiKey = os.Getenv("API_KEY")
-	Cfg.CurDir, err = os.Getwd()
+	ModelCfg.Model = os.Getenv("MODEL")
+	ModelCfg.MaxTokens = 1024
+	SysCfg.Url = os.Getenv("URL")
+	SysCfg.ApiKey = os.Getenv("API_KEY")
+	SysCfg.CurDir, err = os.Getwd()
 	if err != nil {
 		return fmt.Errorf("Get current directory failed: %v", err)
 	}
-	Cfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, don't explain.", Cfg.CurDir)
-	if Cfg.Model == "" || Cfg.Url == "" || Cfg.ApiKey == "" {
+	SysCfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, don't explain.", SysCfg.CurDir)
+	if ModelCfg.Model == "" || SysCfg.Url == "" || SysCfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}
 
 	Client = anthropic.NewClient(
-		option.WithBaseURL(Cfg.Url),
-		option.WithAPIKey(Cfg.ApiKey),
+		option.WithBaseURL(SysCfg.Url),
+		option.WithAPIKey(SysCfg.ApiKey),
 	)
 	return nil
 }
 
-func AgentLoop(messages []Model.Message) {
+func AgentLoop(request *Model.ChatRequest) {
 	for {
+		resp, err := Client.Messages.New(
+			context.TODO(),
+			anthropic.MessageNewParams{
+				MaxTokens: request.MaxTokens,
+				Messages:  request.Messages,
+				Model:     request.Model,
+				System:    request.SystemPrompt,
+			},
+		)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			continue
+		}
 
 	}
 }
@@ -60,21 +80,18 @@ func main() {
 		os.Exit(Const.ExitEnvError)
 	}
 	scanner := bufio.NewScanner(os.Stdin)
-	var history []Model.Message
+	req := Model.NewChatRequest(ModelCfg.Model, ModelCfg.MaxTokens, SysCfg.SystemPrompt)
 
-	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.`")
+	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {
-		fmt.Printf("\033[36mYou >> \033[0m")
+		fmt.Printf("\033[36mUser >> \033[0m")
 		scanner.Scan()
 		query := scanner.Text()
 		if query == "/exit" {
 			fmt.Println("Bye!")
 			break
 		}
-		history = append(history, Model.Message{
-			Role:    "user",
-			Content: query,
-		})
-		AgentLoop(history)
+		req.AddUserContent(query)
+		AgentLoop(req)
 	}
 }
