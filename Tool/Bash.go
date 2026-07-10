@@ -1,7 +1,10 @@
 package Tool
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"go-agent/Const"
 	"go-agent/Model"
 	"go-agent/Services"
 	"os/exec"
@@ -13,8 +16,13 @@ type Command struct {
 }
 
 func executeCommand(command string) (string, error) {
-	cmd := exec.Command("bash", "-c", command)
+	ctx, cancel := context.WithTimeout(context.Background(), Const.BashTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 	output, err := cmd.CombinedOutput()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return "", fmt.Errorf("bash timed out after %s", Const.BashTimeout)
+	}
 	if err != nil {
 		return "", err
 	}

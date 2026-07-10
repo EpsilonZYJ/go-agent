@@ -2,7 +2,10 @@ package Const
 
 import "time"
 
-const REQUEST_TIMEOUT = time.Second * 90
+const (
+	RequestTimeout = time.Second * 90
+	RetryDelay     = time.Millisecond * 500
+)
 const MaxRequestTries = 3
 
 const (

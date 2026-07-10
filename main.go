@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -64,8 +65,9 @@ func AgentLoop(request *Services.ChatRequest) {
 	var trials int = 0
 	for {
 		// 创建请求
+		ctx, cancel := context.WithTimeout(context.Background(), Const.RequestTimeout)
 		resp, err := Client.Messages.New(
-			context.TODO(),
+			ctx,
 			anthropic.MessageNewParams{
 				MaxTokens: request.MaxTokens,
 				Messages:  request.Messages,
@@ -74,16 +76,18 @@ func AgentLoop(request *Services.ChatRequest) {
 				Tools:     request.Tools,
 			},
 		)
+		cancel()
 		if err != nil {
 			errCode := Errors.AnthropicRequestErrorCode(err)
 			if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
 				fmt.Printf("An error occurred: %v\n", err)
 				return
-			} else if trials == Const.MaxRequestTries {
+			} else if trials >= Const.MaxRequestTries {
 				fmt.Printf("Max Request Tries: %d\n", trials)
 				return
 			}
 			trials++
+			time.Sleep(time.Duration(trials) * Const.RetryDelay)
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
@@ -121,29 +125,28 @@ func AgentLoop(request *Services.ChatRequest) {
 				case "bash":
 					var args Tool.Command
 					if err := json.Unmarshal(block.Input, &args); err != nil {
-						results[i] = anthropic.NewToolResultBlock(block.ID, "invalid tool input: "+err.Error(), true)
+						results[idx] = anthropic.NewToolResultBlock(block.ID, "invalid tool input: "+err.Error(), true)
 						return
 					}
 					fmt.Printf("\033[33m$ %s\033[0m\n", args.Command)
 					output, err := Tool.RunBash(args.Command)
 					if err != nil {
-						results[i] = anthropic.NewToolResultBlock(block.ID, err.Error(), true)
+						results[idx] = anthropic.NewToolResultBlock(block.ID, err.Error(), true)
 						return
 					}
 					if strings.TrimSpace(output) == "" {
 						output = ""
 					}
-					results[i] = anthropic.NewToolResultBlock(block.ID, output, false)
+					results[idx] = anthropic.NewToolResultBlock(block.ID, output, false)
 				default:
-					results[i] = anthropic.NewToolResultBlock(block.ID, "unknown tool: "+block.Name, false)
+					results[idx] = anthropic.NewToolResultBlock(block.ID, "unknown tool: "+block.Name, true)
 				}
 
 			}(i, block)
 
-			toolwg.Wait()
-			request.Messages = append(request.Messages, anthropic.NewUserMessage(results...))
 		}
-
+		toolwg.Wait()
+		request.Messages = append(request.Messages, anthropic.NewUserMessage(results...))
 	}
 }
 
@@ -160,9 +163,16 @@ func main() {
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {
 		fmt.Printf("\033[36mUser >> \033[0m")
-		scanner.Scan()
-		query := scanner.Text()
-		if query == "/exit" {
+		if !scanner.Scan() {
+			if err := scanner.Err(); err != nil {
+				fmt.Println(err)
+			}
+			os.Exit(Const.ExitInputError)
+		}
+		query := strings.TrimSpace(scanner.Text())
+		if query == "" {
+			continue
+		} else if query == "/exit" {
 			fmt.Println("Bye!")
 			break
 		}
