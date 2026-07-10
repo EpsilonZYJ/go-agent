@@ -4,10 +4,13 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"go-agent/Model"
 	"go-agent/Services"
 	"go-agent/Tool"
-	"go-agent/Utils/Errors"
+	"go-agent/Utils/errs"
+	"go-agent/Utils/logs"
 	"net/http"
 	"os"
 	"strings"
@@ -19,23 +22,11 @@ import (
 )
 
 import (
-	Const "go-agent/Const"
+	Const "go-agent/common"
 )
 
-type SystemConfig struct {
-	Url          string `json:"url"`
-	ApiKey       string `json:"api_key"`
-	SystemPrompt string `json:"system_prompt"`
-	CurDir       string `json:"cur_dir"`
-}
-
-type ModelConfig struct {
-	Model     string `json:"model"`
-	MaxTokens int64  `json:"maxTokens"`
-}
-
-var SysCfg SystemConfig
-var ModelCfg ModelConfig
+var SysCfg Model.SystemConfig
+var ModelCfg Model.ModelConfig
 
 var Client anthropic.Client
 
@@ -49,7 +40,7 @@ func InitAgent() error {
 	if err != nil {
 		return fmt.Errorf("Get current directory failed: %v", err)
 	}
-	SysCfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, don't explain.", SysCfg.CurDir)
+	SysCfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, and explain.", SysCfg.CurDir)
 	if ModelCfg.Model == "" || SysCfg.Url == "" || SysCfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}
@@ -76,21 +67,28 @@ func AgentLoop(request *Services.ChatRequest) {
 				Tools:     request.Tools,
 			},
 		)
-		cancel()
 		if err != nil {
-			errCode := Errors.AnthropicRequestErrorCode(err)
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				logs.Debug("[AgentLoop] Request timeout.")
+			}
+			errCode := errs.AnthropicRequestErrorCode(err)
 			if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
 				fmt.Printf("An error occurred: %v\n", err)
+				cancel()
 				return
 			} else if trials >= Const.MaxRequestTries {
 				fmt.Printf("Max Request Tries: %d\n", trials)
+				cancel()
 				return
 			}
 			trials++
 			time.Sleep(time.Duration(trials) * Const.RetryDelay)
+			cancel()
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
+		cancel()
+
 		trials = 0
 		request.Messages = append(request.Messages, resp.ToParam())
 

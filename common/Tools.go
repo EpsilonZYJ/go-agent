@@ -1,4 +1,4 @@
-package Const
+package common
 
 import "time"
 

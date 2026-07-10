@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go-agent/Const"
 	"go-agent/Model"
 	"go-agent/Services"
+	"go-agent/Utils/logs"
+	"go-agent/common"
 	"os/exec"
 	"strings"
 )
@@ -16,12 +17,13 @@ type Command struct {
 }
 
 func executeCommand(command string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), Const.BashTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), common.BashTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 	output, err := cmd.CombinedOutput()
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return "", fmt.Errorf("bash timed out after %s", Const.BashTimeout)
+		logs.Debug("[executeCommand] bash timeout.")
+		return "", fmt.Errorf("bash timed out after %s", common.BashTimeout)
 	}
 	if err != nil {
 		return "", err
