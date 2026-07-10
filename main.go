@@ -141,6 +141,7 @@ func main() {
 	}
 	scanner := bufio.NewScanner(os.Stdin)
 	req := Services.NewChatRequest(ModelCfg.Model, ModelCfg.MaxTokens, SysCfg.SystemPrompt)
+	Tool.RegisterTools(req)
 
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {

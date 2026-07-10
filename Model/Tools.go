@@ -23,14 +23,16 @@ type Property struct {
 	Description string `json:"description"`
 }
 
-func (tool Tool) ToAnthropicTool() anthropic.ToolParam {
-	return anthropic.ToolParam{
-		Name:        tool.Name,
-		Description: param.NewOpt(tool.Description),
-		InputSchema: anthropic.ToolInputSchemaParam{
-			Type:       constant.Object(tool.InputSchema.Type),
-			Required:   tool.InputSchema.Required,
-			Properties: tool.InputSchema.Properties,
+func (tool Tool) ToAnthropicTool() anthropic.ToolUnionParam {
+	return anthropic.ToolUnionParam{
+		OfTool: &anthropic.ToolParam{
+			Name:        tool.Name,
+			Description: param.NewOpt(tool.Description),
+			InputSchema: anthropic.ToolInputSchemaParam{
+				Type:       constant.Object(tool.InputSchema.Type),
+				Required:   tool.InputSchema.Required,
+				Properties: tool.InputSchema.Properties,
+			},
 		},
 	}
 }

@@ -2,6 +2,8 @@ package Tool
 
 import (
 	"fmt"
+	"go-agent/Model"
+	"go-agent/Services"
 	"os/exec"
 	"strings"
 )
@@ -34,6 +36,19 @@ func RunBash(command string) (string, error) {
 	return output, nil
 }
 
-func RegisterToolBash() {
-
+func registerToolBash(req *Services.ChatRequest) {
+	req.AddTool(Model.Tool{
+		Name:        "bash",
+		Description: "Run a shell command",
+		InputSchema: Model.InputSchema{
+			Type: "object",
+			Properties: map[string]Model.Property{
+				"command": {
+					Type:        "string",
+					Description: "",
+				},
+			},
+			Required: []string{"command"},
+		},
+	}.ToAnthropicTool())
 }

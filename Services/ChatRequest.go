@@ -50,6 +50,14 @@ func (req *ChatRequest) AddMessages(message []Model.Message) error {
 	return nil
 }
 
+func (req *ChatRequest) AddTool(tool anthropic.ToolUnionParam) {
+	req.Tools = append(req.Tools, tool)
+}
+
+func (req *ChatRequest) AddTools(tools []anthropic.ToolUnionParam) {
+	req.Tools = append(req.Tools, tools...)
+}
+
 func (req *ChatRequest) AddUserContent(userContent string) {
 	if req.Messages == nil {
 		req.Messages = []anthropic.MessageParam{}
