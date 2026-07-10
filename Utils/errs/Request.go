@@ -2,16 +2,15 @@ package errs
 
 import (
 	"errors"
-	"go-agent/common"
+	"go-agent/common/consts"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
 
 func AnthropicRequestErrorCode(err error) int {
-	var apiErr *anthropic.Error
-	if errors.As(err, &apiErr) {
+	if apiErr, ok := errors.AsType[*anthropic.Error](err); ok {
 		return apiErr.StatusCode
 	} else {
-		return common.RequestUnknownError
+		return consts.RequestUnknownError
 	}
 }

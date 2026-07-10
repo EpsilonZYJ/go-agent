@@ -1,4 +1,4 @@
-package Model
+package configs
 
 type SystemConfig struct {
 	Url          string `json:"url"`
@@ -11,3 +11,6 @@ type ModelConfig struct {
 	Model     string `json:"model"`
 	MaxTokens int64  `json:"maxTokens"`
 }
+
+var SysCfg SystemConfig
+var ModelCfg ModelConfig

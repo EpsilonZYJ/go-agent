@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go-agent/Model"
 	"go-agent/Services"
 	"go-agent/Tool"
 	"go-agent/Utils/errs"
 	"go-agent/Utils/logs"
+	"go-agent/common/consts"
+	"go-agent/configs"
 	"net/http"
 	"os"
 	"strings"
@@ -21,33 +22,26 @@ import (
 	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
-import (
-	Const "go-agent/common"
-)
-
-var SysCfg Model.SystemConfig
-var ModelCfg Model.ModelConfig
-
 var Client anthropic.Client
 
 func InitAgent() error {
 	var err error
-	ModelCfg.Model = os.Getenv("MODEL")
-	ModelCfg.MaxTokens = 1024
-	SysCfg.Url = os.Getenv("URL")
-	SysCfg.ApiKey = os.Getenv("API_KEY")
-	SysCfg.CurDir, err = os.Getwd()
+	configs.ModelCfg.Model = os.Getenv("MODEL")
+	configs.ModelCfg.MaxTokens = consts.MaxTokens
+	configs.SysCfg.Url = os.Getenv("URL")
+	configs.SysCfg.ApiKey = os.Getenv("API_KEY")
+	configs.SysCfg.CurDir, err = os.Getwd()
 	if err != nil {
 		return fmt.Errorf("Get current directory failed: %v", err)
 	}
-	SysCfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, and explain.", SysCfg.CurDir)
-	if ModelCfg.Model == "" || SysCfg.Url == "" || SysCfg.ApiKey == "" {
+	configs.SysCfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, and explain.", configs.SysCfg.CurDir)
+	if configs.ModelCfg.Model == "" || configs.SysCfg.Url == "" || configs.SysCfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}
 
 	Client = anthropic.NewClient(
-		option.WithBaseURL(SysCfg.Url),
-		option.WithAPIKey(SysCfg.ApiKey),
+		option.WithBaseURL(configs.SysCfg.Url),
+		option.WithAPIKey(configs.SysCfg.ApiKey),
 	)
 	return nil
 }
@@ -56,7 +50,7 @@ func AgentLoop(request *Services.ChatRequest, textOuts *[]strings.Builder) {
 	var trials int = 0
 	for {
 		// 创建请求
-		ctx, cancel := context.WithTimeout(context.Background(), Const.RequestTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), consts.RequestTimeout)
 		resp, err := Client.Messages.New(
 			ctx,
 			anthropic.MessageNewParams{
@@ -76,13 +70,13 @@ func AgentLoop(request *Services.ChatRequest, textOuts *[]strings.Builder) {
 				fmt.Printf("An error occurred: %v\n", err)
 				cancel()
 				return
-			} else if trials >= Const.MaxRequestTries {
+			} else if trials >= consts.MaxRequestTries {
 				fmt.Printf("Max Request Tries: %d\n", trials)
 				cancel()
 				return
 			}
 			trials++
-			time.Sleep(time.Duration(trials) * Const.RetryDelay)
+			time.Sleep(time.Duration(trials) * consts.RetryDelay)
 			cancel()
 			fmt.Printf("Error: %v\n", err)
 			continue
@@ -95,11 +89,11 @@ func AgentLoop(request *Services.ChatRequest, textOuts *[]strings.Builder) {
 		// 收集输出和工具调用
 		var toolUses []anthropic.ContentBlockUnion
 		for blkidx, b := range resp.Content {
-			if b.Type == Const.Text && b.Text != "" {
+			if b.Type == consts.Text && b.Text != "" {
 				var tmp strings.Builder
 				tmp.WriteString(b.Text)
 				*textOuts = append(*textOuts, tmp)
-			} else if b.Type == Const.ToolUse {
+			} else if b.Type == consts.ToolUse {
 				toolUses = append(toolUses, b)
 			}
 			logs.Debug(
@@ -124,6 +118,7 @@ func AgentLoop(request *Services.ChatRequest, textOuts *[]strings.Builder) {
 			toolwg.Add(1)
 			go func(idx int, block anthropic.ContentBlockUnion) {
 				defer toolwg.Done()
+				toolName := block.Name
 				switch block.Name {
 				case "bash":
 					var args Tool.Command
@@ -166,10 +161,10 @@ func main() {
 	err := InitAgent()
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(Const.ExitEnvError)
+		os.Exit(consts.ExitEnvError)
 	}
 	scanner := bufio.NewScanner(os.Stdin)
-	req := Services.NewChatRequest(ModelCfg.Model, ModelCfg.MaxTokens, SysCfg.SystemPrompt)
+	req := Services.NewChatRequest(configs.ModelCfg.Model, configs.ModelCfg.MaxTokens, configs.SysCfg.SystemPrompt)
 	Tool.RegisterTools(req)
 
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
@@ -180,7 +175,7 @@ func main() {
 			if err := scanner.Err(); err != nil {
 				fmt.Println(err)
 			}
-			os.Exit(Const.ExitInputError)
+			os.Exit(consts.ExitInputError)
 		}
 		query := strings.TrimSpace(scanner.Text())
 		if query == "" {
