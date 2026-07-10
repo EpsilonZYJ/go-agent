@@ -124,6 +124,7 @@ func AgentLoop(request *Services.ChatRequest) {
 						results[i] = anthropic.NewToolResultBlock(block.ID, "invalid tool input: "+err.Error(), true)
 						return
 					}
+					fmt.Printf("\033[33m$ %s\033[0m\n", args.Command)
 					output, err := Tool.RunBash(args.Command)
 					if err != nil {
 						results[i] = anthropic.NewToolResultBlock(block.ID, err.Error(), true)
