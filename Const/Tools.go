@@ -8,5 +8,5 @@ const (
 )
 
 const (
-	BASH_TIMEOUT = time.Second * 120
+	BashTimeout = time.Second * 120
 )

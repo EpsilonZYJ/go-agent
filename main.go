@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"go-agent/Services"
 	"go-agent/Tool"
+	"go-agent/Utils/Errors"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -59,6 +61,7 @@ func InitAgent() error {
 }
 
 func AgentLoop(request *Services.ChatRequest) {
+	var trials int = 0
 	for {
 		// 创建请求
 		resp, err := Client.Messages.New(
@@ -72,9 +75,19 @@ func AgentLoop(request *Services.ChatRequest) {
 			},
 		)
 		if err != nil {
+			errCode := Errors.AnthropicRequestErrorCode(err)
+			if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
+				fmt.Printf("An error occurred: %v\n", err)
+				return
+			} else if trials == Const.MaxRequestTries {
+				fmt.Printf("Max Request Tries: %d\n", trials)
+				return
+			}
+			trials++
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
+		trials = 0
 		request.Messages = append(request.Messages, resp.ToParam())
 
 		// 收集输出和工具调用
