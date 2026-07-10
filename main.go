@@ -52,7 +52,7 @@ func InitAgent() error {
 	return nil
 }
 
-func AgentLoop(request *Services.ChatRequest) {
+func AgentLoop(request *Services.ChatRequest, textOuts *[]strings.Builder) {
 	var trials int = 0
 	for {
 		// 创建请求
@@ -93,17 +93,22 @@ func AgentLoop(request *Services.ChatRequest) {
 		request.Messages = append(request.Messages, resp.ToParam())
 
 		// 收集输出和工具调用
-		var textOut strings.Builder
 		var toolUses []anthropic.ContentBlockUnion
-		for _, b := range resp.Content {
+		for blkidx, b := range resp.Content {
 			if b.Type == Const.Text && b.Text != "" {
-				textOut.WriteString(b.Text)
+				var tmp strings.Builder
+				tmp.WriteString(b.Text)
+				*textOuts = append(*textOuts, tmp)
 			} else if b.Type == Const.ToolUse {
 				toolUses = append(toolUses, b)
 			}
-		}
-		if textOut.Len() > 0 {
-			fmt.Println("\033[32mAgent: \n\n \033[0m" + textOut.String())
+			logs.Debug(
+				"[AgentLoop] ",
+				"block=", blkidx,
+				"type=", b.Type,
+				"raw=", b.RawJSON(),
+				"\n", "",
+			)
 		}
 
 		// 无工具调用，本轮结束
@@ -148,6 +153,15 @@ func AgentLoop(request *Services.ChatRequest) {
 	}
 }
 
+func PrintAgentOutput(textOuts []strings.Builder) {
+	for _, textOut := range textOuts {
+		if textOut.Len() > 0 {
+			fmt.Println("\033[32mAgent: \n\n \033[0m" + textOut.String())
+		}
+	}
+	fmt.Println()
+}
+
 func main() {
 	err := InitAgent()
 	if err != nil {
@@ -160,6 +174,7 @@ func main() {
 
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {
+		var textOuts []strings.Builder
 		fmt.Printf("\033[36mUser >> \033[0m")
 		if !scanner.Scan() {
 			if err := scanner.Err(); err != nil {
@@ -175,6 +190,7 @@ func main() {
 			break
 		}
 		req.AddUserContent(query)
-		AgentLoop(req)
+		AgentLoop(req, &textOuts)
+		PrintAgentOutput(textOuts)
 	}
 }
