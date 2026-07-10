@@ -10,6 +10,26 @@ import (
 	"strings"
 )
 
+type globInput struct {
+	Pattern string `json:"pattern"`
+}
+
+type readInput struct {
+	Path  string `json:"path"`
+	Limit int    `json:"limit"`
+}
+
+type writeInput struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+type editInput struct {
+	Path    string `json:"path"`
+	OldText string `json:"old_text"`
+	NewText string `json:"new_text"`
+}
+
 func SafePath(p string) (string, error) {
 	workdir, err := filepath.Abs(configs.SysCfg.CurDir)
 	if err != nil {
@@ -29,15 +49,15 @@ func SafePath(p string) (string, error) {
 	return path, nil
 }
 
-func RunRead(path string, limit int) string {
+func RunRead(path string, limit int) (string, error) {
 	path, err := SafePath(path)
 	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "", fmt.Errorf("error: %v", err)
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "", fmt.Errorf("error: %v", err)
 	}
 
 	lines := strings.Split(string(data), "\n")
@@ -48,57 +68,57 @@ func RunRead(path string, limit int) string {
 			fmt.Sprintf("... (%d more lines)", len(lines)-limit),
 		)
 	}
-	return strings.Join(lines, "\n")
+	return strings.Join(lines, "\n"), nil
 }
 
-func RunWrite(path string, content string) string {
+func RunWrite(path string, content string) (string, error) {
 	path, err := SafePath(path)
 	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "", fmt.Errorf("error: %v", err)
 	}
 
 	parent := filepath.Dir(path)
 	err = os.MkdirAll(parent, 0755)
 	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "", fmt.Errorf("error: %v", err)
 	}
 
 	err = os.WriteFile(path, []byte(content), 0644)
 	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "", fmt.Errorf("error: %v", err)
 	}
-	return fmt.Sprintf("Wrote %d bytes to %s", len(content), path)
+	return fmt.Sprintf("Wrote %d bytes to %s", len(content), path), nil
 }
 
-func RunEdit(path string, oldtxt string, newtxt string) string {
+func RunEdit(path string, oldtxt string, newtxt string) (string, error) {
 	path, err := SafePath(path)
 	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "", fmt.Errorf("error: %v", err)
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "", fmt.Errorf("error: %v", err)
 	}
 
 	text := string(data)
 	if !strings.Contains(text, oldtxt) {
-		return fmt.Sprintf("Error: text not found in %s", path)
+		return "", fmt.Errorf("error: text not found in %s", path)
 	}
 	newContent := strings.Replace(text, oldtxt, newtxt, 1)
 
 	err = os.WriteFile(path, []byte(newContent), 0644)
 	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "", fmt.Errorf("error: %v", err)
 	}
-	return fmt.Sprintf("Edited: %s", path)
+	return fmt.Sprintf("Edited: %s", path), nil
 }
 
-func RunGlob(pattern string) string {
+func RunGlob(pattern string) (string, error) {
 	workdir := configs.SysCfg.CurDir
 	matches, err := filepath.Glob(filepath.Join(workdir, pattern))
 	if err != nil {
-		return fmt.Sprintf("Error: %v", err)
+		return "", fmt.Errorf("error: %v", err)
 	}
 	results := make([]string, 0, len(matches))
 	for _, match := range matches {
@@ -108,13 +128,13 @@ func RunGlob(pattern string) string {
 		}
 	}
 	if len(results) == 0 {
-		return "(no matches)"
+		return "(no matches)", nil
 	}
-	return strings.Join(results, "\n")
+	return strings.Join(results, "\n"), nil
 }
 
 func registerToolFileSystem(req *Services.ChatRequest) {
-	req.AddTool("read_file", Model.Tool{
+	req.AddTool(Model.Tool{
 		Name:        "read_file",
 		Description: "Read file contents.",
 		InputSchema: Model.InputSchema{
@@ -126,14 +146,14 @@ func registerToolFileSystem(req *Services.ChatRequest) {
 				},
 				"limit": {
 					Type:        "integer",
-					Description: "",
+					Description: "read limited lines, -1 means no limit",
 				},
 			},
-			Required: []string{"path"},
+			Required: []string{"path", "limit"},
 		},
 	}.ToAnthropicTool())
 
-	req.AddTool("write_file", Model.Tool{
+	req.AddTool(Model.Tool{
 		Name:        "write_file",
 		Description: "Write content to a file.",
 		InputSchema: Model.InputSchema{
@@ -152,7 +172,7 @@ func registerToolFileSystem(req *Services.ChatRequest) {
 		},
 	}.ToAnthropicTool())
 
-	req.AddTool("edit_file", Model.Tool{
+	req.AddTool(Model.Tool{
 		Name:        "edit_file",
 		Description: "Replace exact text in a file once.",
 		InputSchema: Model.InputSchema{
@@ -175,7 +195,7 @@ func registerToolFileSystem(req *Services.ChatRequest) {
 		},
 	}.ToAnthropicTool())
 
-	req.AddTool("glob", Model.Tool{
+	req.AddTool(Model.Tool{
 		Name:        "glob",
 		Description: "Find files matching a glob pattern.",
 		InputSchema: Model.InputSchema{
@@ -189,6 +209,18 @@ func registerToolFileSystem(req *Services.ChatRequest) {
 			Required: []string{"pattern"},
 		},
 	}.ToAnthropicTool())
+	RegisterExecutor("glob", Wrap(func(in globInput) (string, error) {
+		return RunGlob(in.Pattern)
+	}))
+	RegisterExecutor("read_file", Wrap(func(in readInput) (string, error) {
+		return RunRead(in.Path, in.Limit)
+	}))
+	RegisterExecutor("write_file", Wrap(func(in writeInput) (string, error) {
+		return RunWrite(in.Path, in.Content)
+	}))
+	RegisterExecutor("edit_file", Wrap(func(in editInput) (string, error) {
+		return RunEdit(in.Path, in.OldText, in.NewText)
+	}))
 }
 
 func toSafeRelative(workdir string, match string) (string, bool) {

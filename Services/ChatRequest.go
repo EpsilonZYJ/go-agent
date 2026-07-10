@@ -3,8 +3,6 @@ package Services
 import (
 	"fmt"
 	"go-agent/Model"
-	"go-agent/Utils/logs"
-	"sync"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -15,14 +13,6 @@ type ChatRequest struct {
 	Messages     []anthropic.MessageParam   `json:"message"`
 	MaxTokens    int64                      `json:"maxTokens"`
 	Tools        []anthropic.ToolUnionParam `json:"tool_list,omitempty"`
-	toolMap      map[string]anthropic.ToolUnionParam
-	mu           sync.RWMutex
-}
-
-func (req *ChatRequest) GetTool(name string) anthropic.ToolUnionParam {
-	req.mu.RLock()
-	defer req.mu.RUnlock()
-	return req.toolMap[name]
 }
 
 func NewChatRequest(model string, maxTokens int64, systemPrompt string) *ChatRequest {
@@ -32,7 +22,6 @@ func NewChatRequest(model string, maxTokens int64, systemPrompt string) *ChatReq
 		Messages:     []anthropic.MessageParam{},
 		MaxTokens:    maxTokens,
 		Tools:        []anthropic.ToolUnionParam{},
-		toolMap:      map[string]anthropic.ToolUnionParam{},
 	}
 }
 
@@ -61,23 +50,12 @@ func (req *ChatRequest) AddMessages(message []Model.Message) error {
 	return nil
 }
 
-func (req *ChatRequest) AddTool(name string, tool anthropic.ToolUnionParam) {
-	req.mu.Lock()
-	defer req.mu.Unlock()
-	req.toolMap[name] = tool
+func (req *ChatRequest) AddTool(tool anthropic.ToolUnionParam) {
 	req.Tools = append(req.Tools, tool)
 }
 
-func (req *ChatRequest) AddTools(names []string, tools []anthropic.ToolUnionParam) {
-	if len(names) != len(tools) {
-		logs.Error("The number of tools does not match the number of tool names")
-	}
-	req.mu.Lock()
-	defer req.mu.Unlock()
-	for idx, name := range names {
-		req.toolMap[name] = tools[idx]
-		req.Tools = append(req.Tools, tools[idx])
-	}
+func (req *ChatRequest) AddTools(tools []anthropic.ToolUnionParam) {
+	req.Tools = append(req.Tools, tools...)
 }
 
 func (req *ChatRequest) AddUserContent(userContent string) {

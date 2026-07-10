@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type Command struct {
+type command struct {
 	Command string `json:"command"`
 }
 
@@ -47,7 +47,7 @@ func RunBash(command string) (string, error) {
 }
 
 func registerToolBash(req *Services.ChatRequest) {
-	req.AddTool("bash", Model.Tool{
+	req.AddTool(Model.Tool{
 		Name:        "bash",
 		Description: "Run a shell command",
 		InputSchema: Model.InputSchema{
@@ -61,4 +61,7 @@ func registerToolBash(req *Services.ChatRequest) {
 			Required: []string{"command"},
 		},
 	}.ToAnthropicTool())
+	RegisterExecutor("bash", Wrap(func(in command) (string, error) {
+		return RunBash(in.Command)
+	}))
 }

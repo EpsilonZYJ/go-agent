@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"go-agent/Services"
@@ -32,7 +31,7 @@ func InitAgent() error {
 	configs.SysCfg.ApiKey = os.Getenv("API_KEY")
 	configs.SysCfg.CurDir, err = os.Getwd()
 	if err != nil {
-		return fmt.Errorf("Get current directory failed: %v", err)
+		return fmt.Errorf("get current directory failed: %v", err)
 	}
 	configs.SysCfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, and explain.", configs.SysCfg.CurDir)
 	if configs.ModelCfg.Model == "" || configs.SysCfg.Url == "" || configs.SysCfg.ApiKey == "" {
@@ -118,28 +117,12 @@ func AgentLoop(request *Services.ChatRequest, textOuts *[]strings.Builder) {
 			toolwg.Add(1)
 			go func(idx int, block anthropic.ContentBlockUnion) {
 				defer toolwg.Done()
-				toolName := block.Name
-				switch block.Name {
-				case "bash":
-					var args Tool.Command
-					if err := json.Unmarshal(block.Input, &args); err != nil {
-						results[idx] = anthropic.NewToolResultBlock(block.ID, "invalid tool input: "+err.Error(), true)
-						return
-					}
-					fmt.Printf("\033[33m$ %s\033[0m\n", args.Command)
-					output, err := Tool.RunBash(args.Command)
-					if err != nil {
-						results[idx] = anthropic.NewToolResultBlock(block.ID, err.Error(), true)
-						return
-					}
-					if strings.TrimSpace(output) == "" {
-						output = ""
-					}
-					results[idx] = anthropic.NewToolResultBlock(block.ID, output, false)
-				default:
-					results[idx] = anthropic.NewToolResultBlock(block.ID, "unknown tool: "+block.Name, true)
+				output, err := Tool.Dispatch(block.Name, block.Input)
+				if err != nil {
+					results[idx] = anthropic.NewToolResultBlock(block.ID, err.Error(), true)
+					return
 				}
-
+				results[idx] = anthropic.NewToolResultBlock(block.ID, output, false)
 			}(i, block)
 
 		}
