@@ -144,7 +144,7 @@ func registerToolFileSystem(req *services.ChatRequest) {
 			Properties: map[string]model.Property{
 				"path": {
 					Type:        "string",
-					Description: "",
+					Description: "relative path.",
 				},
 				"limit": {
 					Type:        "integer",
@@ -163,11 +163,11 @@ func registerToolFileSystem(req *services.ChatRequest) {
 			Properties: map[string]model.Property{
 				"path": {
 					Type:        "string",
-					Description: "",
+					Description: "relative path.",
 				},
 				"content": {
 					Type:        "string",
-					Description: "",
+					Description: "content to write.",
 				},
 			},
 			Required: []string{"path", "content"},
@@ -182,15 +182,15 @@ func registerToolFileSystem(req *services.ChatRequest) {
 			Properties: map[string]model.Property{
 				"path": {
 					Type:        "string",
-					Description: "",
+					Description: "relative path.",
 				},
 				"old_text": {
 					Type:        "string",
-					Description: "",
+					Description: "origin text needed to be edited.",
 				},
 				"new_text": {
 					Type:        "string",
-					Description: "",
+					Description: "new text to replace the origin.",
 				},
 			},
 			Required: []string{"path", "old_text", "new_text"},
@@ -205,7 +205,7 @@ func registerToolFileSystem(req *services.ChatRequest) {
 			Properties: map[string]model.Property{
 				"pattern": {
 					Type:        "string",
-					Description: "",
+					Description: "if path is used, use relative path",
 				},
 			},
 			Required: []string{"pattern"},
