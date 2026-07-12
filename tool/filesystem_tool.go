@@ -1,10 +1,10 @@
-package Tool
+package tool
 
 import (
 	"fmt"
-	"go-agent/Model"
-	"go-agent/Services"
 	"go-agent/configs"
+	"go-agent/model"
+	"go-agent/services"
 	"os"
 	"path/filepath"
 	"strings"
@@ -133,13 +133,13 @@ func RunGlob(pattern string) (string, error) {
 	return strings.Join(results, "\n"), nil
 }
 
-func registerToolFileSystem(req *Services.ChatRequest) {
-	req.AddTool(Model.Tool{
+func registerToolFileSystem(req *services.ChatRequest) {
+	req.AddTool(model.Tool{
 		Name:        "read_file",
 		Description: "Read file contents.",
-		InputSchema: Model.InputSchema{
+		InputSchema: model.InputSchema{
 			Type: "object",
-			Properties: map[string]Model.Property{
+			Properties: map[string]model.Property{
 				"path": {
 					Type:        "string",
 					Description: "",
@@ -153,12 +153,12 @@ func registerToolFileSystem(req *Services.ChatRequest) {
 		},
 	}.ToAnthropicTool())
 
-	req.AddTool(Model.Tool{
+	req.AddTool(model.Tool{
 		Name:        "write_file",
 		Description: "Write content to a file.",
-		InputSchema: Model.InputSchema{
+		InputSchema: model.InputSchema{
 			Type: "object",
-			Properties: map[string]Model.Property{
+			Properties: map[string]model.Property{
 				"path": {
 					Type:        "string",
 					Description: "",
@@ -172,12 +172,12 @@ func registerToolFileSystem(req *Services.ChatRequest) {
 		},
 	}.ToAnthropicTool())
 
-	req.AddTool(Model.Tool{
+	req.AddTool(model.Tool{
 		Name:        "edit_file",
 		Description: "Replace exact text in a file once.",
-		InputSchema: Model.InputSchema{
+		InputSchema: model.InputSchema{
 			Type: "object",
-			Properties: map[string]Model.Property{
+			Properties: map[string]model.Property{
 				"path": {
 					Type:        "string",
 					Description: "",
@@ -195,12 +195,12 @@ func registerToolFileSystem(req *Services.ChatRequest) {
 		},
 	}.ToAnthropicTool())
 
-	req.AddTool(Model.Tool{
+	req.AddTool(model.Tool{
 		Name:        "glob",
 		Description: "Find files matching a glob pattern.",
-		InputSchema: Model.InputSchema{
+		InputSchema: model.InputSchema{
 			Type: "object",
-			Properties: map[string]Model.Property{
+			Properties: map[string]model.Property{
 				"pattern": {
 					Type:        "string",
 					Description: "",

@@ -1,4 +1,4 @@
-package Model
+package model
 
 import "github.com/anthropics/anthropic-sdk-go"
 

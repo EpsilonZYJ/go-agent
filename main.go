@@ -5,12 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go-agent/Services"
-	"go-agent/Tool"
-	"go-agent/Utils/errs"
-	"go-agent/Utils/logs"
 	"go-agent/common/consts"
 	"go-agent/configs"
+	"go-agent/services"
+	"go-agent/tool"
+	"go-agent/utils/errs"
+	"go-agent/utils/logs"
 	"net/http"
 	"os"
 	"strings"
@@ -45,7 +45,7 @@ func InitAgent() error {
 	return nil
 }
 
-func AgentLoop(request *Services.ChatRequest, textOuts *[]strings.Builder) {
+func AgentLoop(request *services.ChatRequest, textOuts *[]strings.Builder) {
 	var trials int = 0
 	for {
 		// 创建请求
@@ -117,7 +117,7 @@ func AgentLoop(request *Services.ChatRequest, textOuts *[]strings.Builder) {
 			toolwg.Add(1)
 			go func(idx int, block anthropic.ContentBlockUnion) {
 				defer toolwg.Done()
-				output, err := Tool.Dispatch(block.Name, block.Input)
+				output, err := tool.Dispatch(block.Name, block.Input)
 				if err != nil {
 					results[idx] = anthropic.NewToolResultBlock(block.ID, err.Error(), true)
 					return
@@ -147,8 +147,8 @@ func main() {
 		os.Exit(consts.ExitEnvError)
 	}
 	scanner := bufio.NewScanner(os.Stdin)
-	req := Services.NewChatRequest(configs.ModelCfg.Model, configs.ModelCfg.MaxTokens, configs.SysCfg.SystemPrompt)
-	Tool.RegisterTools(req)
+	req := services.NewChatRequest(configs.ModelCfg.Model, configs.ModelCfg.MaxTokens, configs.SysCfg.SystemPrompt)
+	tool.RegisterTools(req)
 
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {

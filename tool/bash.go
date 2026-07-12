@@ -1,13 +1,13 @@
-package Tool
+package tool
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"go-agent/Model"
-	"go-agent/Services"
-	"go-agent/Utils/logs"
 	"go-agent/common/consts"
+	"go-agent/model"
+	"go-agent/services"
+	"go-agent/utils/logs"
 	"os/exec"
 	"strings"
 )
@@ -46,13 +46,13 @@ func RunBash(command string) (string, error) {
 	return output, nil
 }
 
-func registerToolBash(req *Services.ChatRequest) {
-	req.AddTool(Model.Tool{
+func registerToolBash(req *services.ChatRequest) {
+	req.AddTool(model.Tool{
 		Name:        "bash",
 		Description: "Run a shell command",
-		InputSchema: Model.InputSchema{
+		InputSchema: model.InputSchema{
 			Type: "object",
-			Properties: map[string]Model.Property{
+			Properties: map[string]model.Property{
 				"command": {
 					Type:        "string",
 					Description: "",

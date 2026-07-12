@@ -1,8 +1,8 @@
-package Services
+package services
 
 import (
 	"fmt"
-	"go-agent/Model"
+	"go-agent/model"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -29,7 +29,7 @@ func NewSystemBlocks(prompt string) []anthropic.TextBlockParam {
 	return []anthropic.TextBlockParam{{Text: prompt}}
 }
 
-func (req *ChatRequest) AddMessages(message []Model.Message) error {
+func (req *ChatRequest) AddMessages(message []model.Message) error {
 	if req.Messages == nil {
 		req.Messages = []anthropic.MessageParam{}
 	}
