@@ -7,3 +7,7 @@ import "time"
 const (
 	BashTimeout = time.Second * 120
 )
+
+const (
+	ToolMaxPrintOutputLines = 5
+)
