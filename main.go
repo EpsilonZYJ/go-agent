@@ -49,7 +49,7 @@ func InitAgent() error {
 	return nil
 }
 
-func AgentLoop(request *services.ChatRequest) {
+func AgentLoop(request *services.ChatRequest, scanner *bufio.Scanner) {
 	var trials int = 0
 	for {
 		// 创建请求
@@ -98,6 +98,8 @@ func AgentLoop(request *services.ChatRequest) {
 				tmp.WriteString(b.Text)
 				textOuts = append(textOuts, tmp)
 			} else if b.Type == consts.ToolUse {
+				// TODO: 收集权限检查情况，对拒绝的提前进行拒绝
+				// permission.CheckPermission(b)
 				toolUses = append(toolUses, b)
 			}
 			logs.Debug(
@@ -187,6 +189,6 @@ func main() {
 			break
 		}
 		req.AddUserContent(query)
-		AgentLoop(req)
+		AgentLoop(req, scanner)
 	}
 }

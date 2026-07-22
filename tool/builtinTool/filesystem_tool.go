@@ -4,6 +4,7 @@ package builtinTool
 
 import (
 	"fmt"
+	"go-agent/common/consts"
 	"go-agent/configs"
 	"go-agent/services"
 	"go-agent/tool"
@@ -144,22 +145,22 @@ func RunGlob(pattern string) (string, error) {
 }
 
 func registerToolFileSystem(req *services.ChatRequest) error {
-	if err := tool.RegisterTool(req, "read_file", "Read file contents.", func(in readInput) (string, error) {
+	if err := tool.RegisterTool(req, consts.ToolReadFile, "Read file contents.", func(in readInput) (string, error) {
 		return RunRead(in.Path, in.Limit)
 	}); err != nil {
 		return err
 	}
-	if err := tool.RegisterTool(req, "write_file", "Write content to a file.", func(in writeInput) (string, error) {
+	if err := tool.RegisterTool(req, consts.ToolWriteFile, "Write content to a file.", func(in writeInput) (string, error) {
 		return RunWrite(in.Path, in.Content)
 	}); err != nil {
 		return err
 	}
-	if err := tool.RegisterTool(req, "edit_file", "Replace exact text in a file once.", func(in editInput) (string, error) {
+	if err := tool.RegisterTool(req, consts.ToolEditFile, "Replace exact text in a file once.", func(in editInput) (string, error) {
 		return RunEdit(in.Path, in.OldText, in.NewText)
 	}); err != nil {
 		return err
 	}
-	if err := tool.RegisterTool(req, "glob", "Find files matching a glob pattern.", func(in globInput) (string, error) {
+	if err := tool.RegisterTool(req, consts.ToolGlob, "Find files matching a glob pattern.", func(in globInput) (string, error) {
 		return RunGlob(in.Pattern)
 	}); err != nil {
 		return err

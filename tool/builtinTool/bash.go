@@ -33,14 +33,7 @@ func executeCommand(command string) (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-var dangerous = []string{"rm -rf /", "sudo", "shutdown", "reboot", "> /dev/"}
-
 func RunBash(command string) (string, error) {
-	for _, d := range dangerous {
-		if strings.Contains(command, d) {
-			return "", fmt.Errorf("dangerous command:%s, contains %s", command, d)
-		}
-	}
 	output, err := executeCommand(command)
 	if err != nil {
 		return "", err
@@ -49,7 +42,7 @@ func RunBash(command string) (string, error) {
 }
 
 func registerToolBash(req *services.ChatRequest) error {
-	return tool.RegisterTool(req, "bash", "Run a shell command", func(in command) (string, error) {
+	return tool.RegisterTool(req, consts.ToolBash, "Run a shell command", func(in command) (string, error) {
 		return RunBash(in.Command)
 	})
 }

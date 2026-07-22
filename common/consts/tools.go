@@ -11,3 +11,11 @@ const (
 const (
 	ToolMaxPrintOutputLines = 5
 )
+
+const (
+	ToolBash      = "bash"
+	ToolReadFile  = "read_file"
+	ToolWriteFile = "write_file"
+	ToolEditFile  = "edit_file"
+	ToolGlob      = "glob"
+)
