@@ -6,4 +6,5 @@ const (
 	ExitCodeOK = iota
 	ExitEnvError
 	ExitInputError
+	ExitRegisterError
 )

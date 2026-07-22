@@ -1,21 +1,21 @@
 // Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
 
-package tool
+package builtinTool
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"go-agent/common/consts"
-	"go-agent/model"
 	"go-agent/services"
+	"go-agent/tool"
 	"go-agent/utils/logs"
 	"os/exec"
 	"strings"
 )
 
 type command struct {
-	Command string `json:"command"`
+	Command string `json:"command" jsonschema:"required" jsonschema_description:"The shell command to execute."`
 }
 
 func executeCommand(command string) (string, error) {
@@ -48,22 +48,8 @@ func RunBash(command string) (string, error) {
 	return output, nil
 }
 
-func registerToolBash(req *services.ChatRequest) {
-	req.AddTool(model.Tool{
-		Name:        "bash",
-		Description: "Run a shell command",
-		InputSchema: model.InputSchema{
-			Type: "object",
-			Properties: map[string]model.Property{
-				"command": {
-					Type:        "string",
-					Description: "",
-				},
-			},
-			Required: []string{"command"},
-		},
-	}.ToAnthropicTool())
-	RegisterExecutor("bash", Wrap(func(in command) (string, error) {
+func registerToolBash(req *services.ChatRequest) error {
+	return tool.RegisterTool(req, "bash", "Run a shell command", func(in command) (string, error) {
 		return RunBash(in.Command)
-	}))
+	})
 }

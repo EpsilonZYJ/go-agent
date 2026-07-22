@@ -165,7 +165,10 @@ func main() {
 	}
 	scanner := bufio.NewScanner(os.Stdin)
 	req := services.NewChatRequest(configs.ModelCfg.Model, configs.ModelCfg.MaxTokens, configs.SysCfg.SystemPrompt)
-	builtinTool.RegisterBuiltinTools(req)
+	if err := builtinTool.RegisterBuiltinTools(req); err != nil {
+		fmt.Printf("register tools failed: %v\n", err)
+		os.Exit(consts.ExitRegisterError)
+	}
 
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {

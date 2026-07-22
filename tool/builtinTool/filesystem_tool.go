@@ -5,7 +5,6 @@ package builtinTool
 import (
 	"fmt"
 	"go-agent/configs"
-	"go-agent/model"
 	"go-agent/services"
 	"go-agent/tool"
 	"os"
@@ -14,23 +13,23 @@ import (
 )
 
 type globInput struct {
-	Pattern string `json:"pattern"`
+	Pattern string `json:"pattern" jsonschema:"required" jsonschema_description:"if path is used, use relative path"`
 }
 
 type readInput struct {
-	Path  string `json:"path"`
-	Limit int    `json:"limit"`
+	Path  string `json:"path" jsonschema:"required" jsonschema_description:"The relative path of the file you want to read."`
+	Limit int    `json:"limit" jsonschema:"required" jsonschema_description:"Read limited lines, -1 means no limit"`
 }
 
 type writeInput struct {
-	Path    string `json:"path"`
-	Content string `json:"content"`
+	Path    string `json:"path" jsonschema:"required" jsonschema_description:"The relative path of the file you want to write."`
+	Content string `json:"content" jsonschema:"required" jsonschema_description:"The content you want to write."`
 }
 
 type editInput struct {
-	Path    string `json:"path"`
-	OldText string `json:"old_text"`
-	NewText string `json:"new_text"`
+	Path    string `json:"path" jsonschema:"required" jsonschema_description:"The relative path of the file you want to edit."`
+	OldText string `json:"old_text" jsonschema:"required" jsonschema_description:"The origin text needed to be edited."`
+	NewText string `json:"new_text" jsonschema:"required" jsonschema_description:"The new text to replace the origin."`
 }
 
 func SafePath(p string) (string, error) {
@@ -144,94 +143,28 @@ func RunGlob(pattern string) (string, error) {
 	return strings.Join(results, "\n"), nil
 }
 
-func registerToolFileSystem(req *services.ChatRequest) {
-	req.AddTool(model.Tool{
-		Name:        "read_file",
-		Description: "Read file contents.",
-		InputSchema: model.InputSchema{
-			Type: "object",
-			Properties: map[string]model.Property{
-				"path": {
-					Type:        "string",
-					Description: "The relative path of the file you want to read.",
-				},
-				"limit": {
-					Type:        "integer",
-					Description: "Read limited lines, -1 means no limit",
-				},
-			},
-			Required: []string{"path", "limit"},
-		},
-	}.ToAnthropicTool())
-
-	req.AddTool(model.Tool{
-		Name:        "write_file",
-		Description: "Write content to a file.",
-		InputSchema: model.InputSchema{
-			Type: "object",
-			Properties: map[string]model.Property{
-				"path": {
-					Type:        "string",
-					Description: "The relative path of the file you want to write.",
-				},
-				"content": {
-					Type:        "string",
-					Description: "The content you want to write.",
-				},
-			},
-			Required: []string{"path", "content"},
-		},
-	}.ToAnthropicTool())
-
-	req.AddTool(model.Tool{
-		Name:        "edit_file",
-		Description: "Replace exact text in a file once.",
-		InputSchema: model.InputSchema{
-			Type: "object",
-			Properties: map[string]model.Property{
-				"path": {
-					Type:        "string",
-					Description: "The relative path of the file you want to edit.",
-				},
-				"old_text": {
-					Type:        "string",
-					Description: "The origin text needed to be edited.",
-				},
-				"new_text": {
-					Type:        "string",
-					Description: "The new text to replace the origin.",
-				},
-			},
-			Required: []string{"path", "old_text", "new_text"},
-		},
-	}.ToAnthropicTool())
-
-	req.AddTool(model.Tool{
-		Name:        "glob",
-		Description: "Find files matching a glob pattern.",
-		InputSchema: model.InputSchema{
-			Type: "object",
-			Properties: map[string]model.Property{
-				"pattern": {
-					Type:        "string",
-					Description: "if path is used, use relative path",
-				},
-			},
-			Required: []string{"pattern"},
-		},
-	}.ToAnthropicTool())
-	tool.RegisterExecutor("glob", tool.Wrap(func(in globInput) (string, error) {
-		return RunGlob(in.Pattern)
-	}))
-	tool.RegisterExecutor("read_file", tool.Wrap(func(in readInput) (string, error) {
+func registerToolFileSystem(req *services.ChatRequest) error {
+	if err := tool.RegisterTool(req, "read_file", "Read file contents.", func(in readInput) (string, error) {
 		return RunRead(in.Path, in.Limit)
-	}))
-	tool.RegisterExecutor("write_file", tool.Wrap(func(in writeInput) (string, error) {
+	}); err != nil {
+		return err
+	}
+	if err := tool.RegisterTool(req, "write_file", "Write content to a file.", func(in writeInput) (string, error) {
 		return RunWrite(in.Path, in.Content)
-	}))
-	tool.RegisterExecutor("edit_file", tool.Wrap(func(in editInput) (string, error) {
+	}); err != nil {
+		return err
+	}
+	if err := tool.RegisterTool(req, "edit_file", "Replace exact text in a file once.", func(in editInput) (string, error) {
 		return RunEdit(in.Path, in.OldText, in.NewText)
-	}))
+	}); err != nil {
+		return err
+	}
+	if err := tool.RegisterTool(req, "glob", "Find files matching a glob pattern.", func(in globInput) (string, error) {
+		return RunGlob(in.Pattern)
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func toSafeRelative(workdir string, match string) (string, bool) {

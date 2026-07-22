@@ -51,18 +51,6 @@ Bye!
 
 Type `/exit` to quit. The model decides for itself which tool to call to accomplish the task.
 
-## Configuration
-
-Constants are defined in `common/consts/` and can be adjusted as needed:
-
-| Constant | Default | Description |
-| --- | --- | --- |
-| `MaxTokens` | 10000 | Max tokens per response |
-| `RequestTimeout` | 90s | Single API request timeout |
-| `MaxRequestTries` | 3 | Max retries for retriable errors |
-| `RetryDelay` | 500ms | Base retry delay (scales with attempt count) |
-| `BashTimeout` | 120s | bash command execution timeout |
-
 ## Roadmap
 
 See [`docs/TODO.md`](docs/TODO.md)
