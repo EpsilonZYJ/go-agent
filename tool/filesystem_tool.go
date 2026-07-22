@@ -144,11 +144,11 @@ func registerToolFileSystem(req *services.ChatRequest) {
 			Properties: map[string]model.Property{
 				"path": {
 					Type:        "string",
-					Description: "relative path.",
+					Description: "The relative path of the file you want to read.",
 				},
 				"limit": {
 					Type:        "integer",
-					Description: "read limited lines, -1 means no limit",
+					Description: "Read limited lines, -1 means no limit",
 				},
 			},
 			Required: []string{"path", "limit"},
@@ -163,11 +163,11 @@ func registerToolFileSystem(req *services.ChatRequest) {
 			Properties: map[string]model.Property{
 				"path": {
 					Type:        "string",
-					Description: "relative path.",
+					Description: "The relative path of the file you want to write.",
 				},
 				"content": {
 					Type:        "string",
-					Description: "content to write.",
+					Description: "The content you want to write.",
 				},
 			},
 			Required: []string{"path", "content"},
@@ -182,15 +182,15 @@ func registerToolFileSystem(req *services.ChatRequest) {
 			Properties: map[string]model.Property{
 				"path": {
 					Type:        "string",
-					Description: "relative path.",
+					Description: "The relative path of the file you want to edit.",
 				},
 				"old_text": {
 					Type:        "string",
-					Description: "origin text needed to be edited.",
+					Description: "The origin text needed to be edited.",
 				},
 				"new_text": {
 					Type:        "string",
-					Description: "new text to replace the origin.",
+					Description: "The new text to replace the origin.",
 				},
 			},
 			Required: []string{"path", "old_text", "new_text"},
@@ -227,7 +227,7 @@ func registerToolFileSystem(req *services.ChatRequest) {
 
 func toSafeRelative(workdir string, match string) (string, bool) {
 	resolved := match
-	if p, err := filepath.EvalSymlinks(workdir); err == nil {
+	if p, err := filepath.EvalSymlinks(match); err == nil {
 		resolved = p
 	}
 
