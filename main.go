@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"go-agent/common/consts"
 	"go-agent/configs"
+	"go-agent/model"
 	"go-agent/services"
 	"go-agent/tool"
+	"go-agent/tool/builtinTool"
 	"go-agent/utils/errs"
 	"go-agent/utils/logs"
 	"net/http"
@@ -114,7 +116,7 @@ func AgentLoop(request *services.ChatRequest) {
 		}
 
 		results := make([]anthropic.ContentBlockParamUnion, len(toolUses))
-		execResults := make([]tool.ToolResult, len(toolUses))
+		execResults := make([]model.ToolResult, len(toolUses))
 		var toolwg sync.WaitGroup
 
 		// 并发执行
@@ -122,7 +124,7 @@ func AgentLoop(request *services.ChatRequest) {
 			toolwg.Add(1)
 			go func(idx int, block anthropic.ContentBlockUnion) {
 				defer toolwg.Done()
-				var result = tool.ToolResult{}
+				var result = model.ToolResult{}
 				result.Name = fmt.Sprintf("\033[33m>>> %s\033[0m\n", block.Name)
 				output, err := tool.Dispatch(block.Name, block.Input)
 				if err != nil {
@@ -163,7 +165,7 @@ func main() {
 	}
 	scanner := bufio.NewScanner(os.Stdin)
 	req := services.NewChatRequest(configs.ModelCfg.Model, configs.ModelCfg.MaxTokens, configs.SysCfg.SystemPrompt)
-	tool.RegisterTools(req)
+	builtinTool.RegisterBuiltinTools(req)
 
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {

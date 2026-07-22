@@ -1,12 +1,13 @@
 // Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
 
-package tool
+package builtinTool
 
 import (
 	"fmt"
 	"go-agent/configs"
 	"go-agent/model"
 	"go-agent/services"
+	"go-agent/tool"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,13 +34,21 @@ type editInput struct {
 }
 
 func SafePath(p string) (string, error) {
+	var path string
+	var workdir string
+
 	workdir, err := filepath.Abs(configs.SysCfg.CurDir)
 	if err != nil {
 		return "", err
 	}
-	path, err := filepath.Abs(filepath.Join(workdir, p))
-	if err != nil {
-		return "", err
+
+	if filepath.IsAbs(p) {
+		path = p
+	} else {
+		path, err = filepath.Abs(filepath.Join(workdir, p))
+		if err != nil {
+			return "", err
+		}
 	}
 	rel, err := filepath.Rel(workdir, path)
 	if err != nil {
@@ -211,16 +220,16 @@ func registerToolFileSystem(req *services.ChatRequest) {
 			Required: []string{"pattern"},
 		},
 	}.ToAnthropicTool())
-	RegisterExecutor("glob", Wrap(func(in globInput) (string, error) {
+	tool.RegisterExecutor("glob", tool.Wrap(func(in globInput) (string, error) {
 		return RunGlob(in.Pattern)
 	}))
-	RegisterExecutor("read_file", Wrap(func(in readInput) (string, error) {
+	tool.RegisterExecutor("read_file", tool.Wrap(func(in readInput) (string, error) {
 		return RunRead(in.Path, in.Limit)
 	}))
-	RegisterExecutor("write_file", Wrap(func(in writeInput) (string, error) {
+	tool.RegisterExecutor("write_file", tool.Wrap(func(in writeInput) (string, error) {
 		return RunWrite(in.Path, in.Content)
 	}))
-	RegisterExecutor("edit_file", Wrap(func(in editInput) (string, error) {
+	tool.RegisterExecutor("edit_file", tool.Wrap(func(in editInput) (string, error) {
 		return RunEdit(in.Path, in.OldText, in.NewText)
 	}))
 }
