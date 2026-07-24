@@ -4,112 +4,39 @@ package main
 
 import (
 	"bufio"
-	"context"
-	"errors"
 	"fmt"
-	"go-agent/common/consts"
-	"go-agent/configs"
-	"go-agent/services"
-	"go-agent/tool/builtinTool"
-	"go-agent/tool/toolExecute"
-	"go-agent/utils/errs"
-	"go-agent/utils/logs"
-	"net/http"
+	"go-agent/internal/agent"
+	"go-agent/internal/config"
+	"go-agent/internal/consts"
+	"go-agent/internal/llm"
+	"go-agent/internal/tool/builtin"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
-var Client anthropic.Client
-
 func InitAgent() error {
 	var err error
-	configs.ModelCfg.Model = os.Getenv("MODEL")
-	configs.ModelCfg.MaxTokens = consts.MaxTokens
-	configs.SysCfg.Url = os.Getenv("URL")
-	configs.SysCfg.ApiKey = os.Getenv("API_KEY")
-	configs.SysCfg.CurDir, err = os.Getwd()
+	config.ModelCfg.Model = os.Getenv("MODEL")
+	config.ModelCfg.MaxTokens = consts.MaxTokens
+	config.SysCfg.Url = os.Getenv("URL")
+	config.SysCfg.ApiKey = os.Getenv("API_KEY")
+	config.SysCfg.CurDir, err = os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get current directory failed: %v", err)
 	}
-	configs.SysCfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Use bash to solve tasks. Act, and explain.", configs.SysCfg.CurDir)
-	if configs.ModelCfg.Model == "" || configs.SysCfg.Url == "" || configs.SysCfg.ApiKey == "" {
+	config.SysCfg.SystemPrompt = fmt.Sprintf("You are a coding agent at %s. Before starting any multi-step task, use todo_write to plan your steps. Update status as you go.", config.SysCfg.CurDir)
+	if config.ModelCfg.Model == "" || config.SysCfg.Url == "" || config.SysCfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}
 
-	Client = anthropic.NewClient(
-		option.WithBaseURL(configs.SysCfg.Url),
-		option.WithAPIKey(configs.SysCfg.ApiKey),
+	llm.Client = anthropic.NewClient(
+		option.WithBaseURL(config.SysCfg.Url),
+		option.WithAPIKey(config.SysCfg.ApiKey),
 	)
 	return nil
-}
-
-func AgentLoop(request *services.ChatRequest, scanner *bufio.Scanner) {
-	var trials int = 0
-	for {
-		// 创建请求
-		ctx, cancel := context.WithTimeout(context.Background(), consts.RequestTimeout)
-		resp, err := Client.Messages.New(
-			ctx,
-			anthropic.MessageNewParams{
-				MaxTokens: request.MaxTokens,
-				Messages:  request.Messages,
-				Model:     request.Model,
-				System:    request.SystemPrompt,
-				Tools:     request.Tools,
-			},
-		)
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				logs.Debug("[AgentLoop] Request timeout.")
-			}
-			errCode := errs.AnthropicRequestErrorCode(err)
-			if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
-				fmt.Printf("An error occurred: %v\n", err)
-				cancel()
-				return
-			} else if trials >= consts.MaxRequestTries {
-				fmt.Printf("Max Request Tries: %d\n", trials)
-				cancel()
-				return
-			}
-			trials++
-			time.Sleep(time.Duration(trials) * consts.RetryDelay)
-			cancel()
-			fmt.Printf("Error: %v\n", err)
-			continue
-		}
-		cancel()
-
-		trials = 0
-		request.Messages = append(request.Messages, resp.ToParam())
-
-		// 收集输出和工具调用
-		var toolUses []anthropic.ContentBlockUnion
-		var textOuts []strings.Builder
-		textOuts, toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap := toolExecute.CollectLLMOutput(resp.Content)
-
-		PrintAgentOutput(textOuts)
-		// 无工具调用，本轮结束
-		if resp.StopReason != anthropic.StopReasonToolUse || len(toolUses) == 0 {
-			return
-		}
-
-		results := toolExecute.ToolExecution(toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap, scanner)
-		request.Messages = append(request.Messages, anthropic.NewUserMessage(results...))
-	}
-}
-
-func PrintAgentOutput(textOuts []strings.Builder) {
-	for _, textOut := range textOuts {
-		if textOut.Len() > 0 {
-			fmt.Println("\033[32mAgent: \n\n \033[0m" + textOut.String())
-		}
-	}
-	fmt.Println()
 }
 
 func main() {
@@ -119,8 +46,8 @@ func main() {
 		os.Exit(consts.ExitEnvError)
 	}
 	scanner := bufio.NewScanner(os.Stdin)
-	req := services.NewChatRequest(configs.ModelCfg.Model, configs.ModelCfg.MaxTokens, configs.SysCfg.SystemPrompt)
-	if err := builtinTool.RegisterBuiltinTools(req); err != nil {
+	req := llm.NewChatRequest(config.ModelCfg.Model, config.ModelCfg.MaxTokens, config.SysCfg.SystemPrompt)
+	if err := builtin.RegisterBuiltinTools(req); err != nil {
 		fmt.Printf("register tools failed: %v\n", err)
 		os.Exit(consts.ExitRegisterError)
 	}
@@ -142,6 +69,6 @@ func main() {
 			break
 		}
 		req.AddUserContent(query)
-		AgentLoop(req, scanner)
+		agent.AgentLoop(req, scanner)
 	}
 }

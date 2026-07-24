@@ -1,9 +1,9 @@
-package toolExecute
+package execute
 
 import (
-	"go-agent/common/consts"
-	"go-agent/tool/permission"
-	"go-agent/utils/logs"
+	"go-agent/internal/consts"
+	"go-agent/internal/logs"
+	"go-agent/internal/tool/permission"
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"

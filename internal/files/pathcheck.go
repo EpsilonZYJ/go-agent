@@ -2,7 +2,7 @@ package files
 
 import (
 	"fmt"
-	"go-agent/configs"
+	"go-agent/internal/config"
 	"path/filepath"
 	"strings"
 )
@@ -11,7 +11,7 @@ func SafePath(p string) (string, error) {
 	var path string
 	var workdir string
 
-	workdir, err := filepath.Abs(configs.SysCfg.CurDir)
+	workdir, err := filepath.Abs(config.SysCfg.CurDir)
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +36,7 @@ func SafePath(p string) (string, error) {
 
 func PathIsSafe(p string) bool {
 	var path string
-	workdir, err := filepath.Abs(configs.SysCfg.CurDir)
+	workdir, err := filepath.Abs(config.SysCfg.CurDir)
 	if err != nil {
 		return false
 	}

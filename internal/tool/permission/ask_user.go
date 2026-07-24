@@ -3,7 +3,7 @@ package permission
 import (
 	"bufio"
 	"fmt"
-	"go-agent/common/consts"
+	"go-agent/internal/consts"
 	"os"
 	"strings"
 )

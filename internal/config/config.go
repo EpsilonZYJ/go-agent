@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
 
-package configs
+package config
 
 type SystemConfig struct {
 	Url          string `json:"url"`

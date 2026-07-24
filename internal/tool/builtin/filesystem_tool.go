@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
 
-package builtinTool
+package builtin
 
 import (
 	"fmt"
-	"go-agent/common/consts"
-	"go-agent/configs"
-	"go-agent/services"
-	"go-agent/tool"
-	"go-agent/utils/files"
+	"go-agent/internal/config"
+	"go-agent/internal/consts"
+	"go-agent/internal/files"
+	"go-agent/internal/llm"
+	"go-agent/internal/tool"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,7 +100,7 @@ func RunEdit(path string, oldtxt string, newtxt string) (string, error) {
 }
 
 func RunGlob(pattern string) (string, error) {
-	workdir := configs.SysCfg.CurDir
+	workdir := config.SysCfg.CurDir
 	matches, err := filepath.Glob(filepath.Join(workdir, pattern))
 	if err != nil {
 		return "", fmt.Errorf("error: %v", err)
@@ -118,7 +118,7 @@ func RunGlob(pattern string) (string, error) {
 	return strings.Join(results, "\n"), nil
 }
 
-func registerToolFileSystem(req *services.ChatRequest) error {
+func registerToolFileSystem(req *llm.ChatRequest) error {
 	if err := tool.RegisterTool(req, consts.ToolReadFile, "Read file contents.", func(in readInput) (string, error) {
 		return RunRead(in.Path, in.Limit)
 	}); err != nil {

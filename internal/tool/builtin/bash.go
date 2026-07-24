@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
 
-package builtinTool
+package builtin
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"go-agent/common/consts"
-	"go-agent/services"
-	"go-agent/tool"
-	"go-agent/utils/logs"
+	"go-agent/internal/consts"
+	"go-agent/internal/llm"
+	"go-agent/internal/logs"
+	"go-agent/internal/tool"
 	"os/exec"
 	"strings"
 )
@@ -41,7 +41,7 @@ func RunBash(command string) (string, error) {
 	return output, nil
 }
 
-func registerToolBash(req *services.ChatRequest) error {
+func registerToolBash(req *llm.ChatRequest) error {
 	return tool.RegisterTool(req, consts.ToolBash, "Run a shell command", func(in command) (string, error) {
 		return RunBash(in.Command)
 	})

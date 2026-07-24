@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"go-agent/common/consts"
+	"go-agent/internal/consts"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )

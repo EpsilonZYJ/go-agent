@@ -2,14 +2,14 @@ package tool
 
 import (
 	"encoding/json"
-	"go-agent/services"
+	"go-agent/internal/llm"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/packages/param"
 	"github.com/invopop/jsonschema"
 )
 
-func RegisterTool[T any](req *services.ChatRequest, name, description string, fn func(T) (string, error)) error {
+func RegisterTool[T any](req *llm.ChatRequest, name, description string, fn func(T) (string, error)) error {
 	var zero T
 	reflector := jsonschema.Reflector{
 		AllowAdditionalProperties:  false,

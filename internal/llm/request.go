@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
 
-package services
+package llm
 
 import (
 	"fmt"
-	"go-agent/model"
+	"go-agent/internal/model"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )

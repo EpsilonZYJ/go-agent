@@ -2,8 +2,8 @@ package permission
 
 import (
 	"fmt"
-	"go-agent/utils/baseImpl"
-	"go-agent/utils/files"
+	"go-agent/internal/baseImpl"
+	"go-agent/internal/files"
 	"strings"
 )
 

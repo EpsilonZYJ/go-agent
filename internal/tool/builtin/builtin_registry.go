@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
 
-package builtinTool
+package builtin
 
 import (
-	"go-agent/services"
+	"go-agent/internal/llm"
 )
 
-func RegisterBuiltinTools(req *services.ChatRequest) error {
+func RegisterBuiltinTools(req *llm.ChatRequest) error {
 	if err := registerToolBash(req); err != nil {
 		return err
 	}

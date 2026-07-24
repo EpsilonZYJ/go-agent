@@ -4,7 +4,7 @@ package errs
 
 import (
 	"errors"
-	"go-agent/common/consts"
+	"go-agent/internal/consts"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )

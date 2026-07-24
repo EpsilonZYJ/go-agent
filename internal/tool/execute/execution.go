@@ -1,12 +1,12 @@
-package toolExecute
+package execute
 
 import (
 	"bufio"
 	"fmt"
-	"go-agent/common/consts"
-	"go-agent/model"
-	"go-agent/tool"
-	"go-agent/tool/permission"
+	"go-agent/internal/consts"
+	"go-agent/internal/model"
+	"go-agent/internal/tool"
+	"go-agent/internal/tool/permission"
 	"strings"
 	"sync"
 
