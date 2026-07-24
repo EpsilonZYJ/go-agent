@@ -5,7 +5,7 @@ import (
 	"go-agent/utils/baseImpl"
 )
 
-type checkPassFunc func(map[string]string) bool
+type checkPassFunc func(map[string]any) bool
 type rule struct {
 	Tools   []string
 	Check   checkPassFunc
@@ -15,7 +15,7 @@ type rule struct {
 // TODO: add rules
 var permissionRules = []rule{}
 
-func check_rules(tool_name string, args map[string]string) error {
+func check_rules(tool_name string, args map[string]any) error {
 	for _, r := range permissionRules {
 		if baseImpl.ListContains(r.Tools, tool_name) {
 			if r.Check(args) {

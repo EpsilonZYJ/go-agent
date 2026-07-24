@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func askUser(tool_name string, args map[string]string, reason string, scanner *bufio.Scanner) consts.PermissionCode {
+func askUser(tool_name string, args map[string]any, reason string, scanner *bufio.Scanner) consts.PermissionCode {
 	fmt.Printf("\n\033[33m⚠  %s\033[0m\n", reason)
 	fmt.Printf("   Tool: %s(%v)", tool_name, args)
 	fmt.Printf("   Allow? [y/N] ")

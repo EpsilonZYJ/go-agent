@@ -10,13 +10,13 @@ import (
 )
 
 func CheckPermission(block anthropic.ContentBlockUnion) (consts.PermissionCode, error) {
-	var raw map[string]string
+	var raw map[string]any
 	err := json.Unmarshal(block.Input, &raw)
 	if err != nil {
 		return consts.PermissionInputInvalid, fmt.Errorf("cannot parse input")
 	}
 	if block.Name == consts.ToolBash {
-		command, ok := raw["command"]
+		command, ok := raw["command"].(string)
 		if !ok {
 			return consts.PermissionInputInvalid, fmt.Errorf("tool bash command not found")
 		}
@@ -33,7 +33,7 @@ func CheckPermission(block anthropic.ContentBlockUnion) (consts.PermissionCode, 
 }
 
 func AskUser(block anthropic.ContentBlockUnion, scanner *bufio.Scanner, reason string) consts.PermissionCode {
-	var raw map[string]string
+	var raw map[string]any
 	err := json.Unmarshal(block.Input, &raw)
 	if err != nil {
 		return consts.PermissionInputInvalid
