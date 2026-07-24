@@ -10,7 +10,11 @@ import (
 
 func askUser(tool_name string, args map[string]any, reason string, scanner *bufio.Scanner) consts.PermissionCode {
 	fmt.Printf("\n\033[33m⚠  %s\033[0m\n", reason)
-	fmt.Printf("   Tool: %s(%v)", tool_name, args)
+	fmt.Printf("   Tool: %s(\n", tool_name)
+	for k, v := range args {
+		fmt.Println("         \t", k, ":", v)
+	}
+	fmt.Printf("         )")
 	fmt.Printf("   Allow? [y/N] ")
 	var tries int = 0
 	for !scanner.Scan() {
