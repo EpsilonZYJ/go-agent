@@ -19,3 +19,7 @@ const (
 	ToolEditFile  = "edit_file"
 	ToolGlob      = "glob"
 )
+
+const (
+	ToolExecuteBatch = 16
+)

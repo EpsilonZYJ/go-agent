@@ -9,16 +9,14 @@ import (
 	"fmt"
 	"go-agent/common/consts"
 	"go-agent/configs"
-	"go-agent/model"
 	"go-agent/services"
-	"go-agent/tool"
 	"go-agent/tool/builtinTool"
+	"go-agent/tool/toolExecute"
 	"go-agent/utils/errs"
 	"go-agent/utils/logs"
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -92,24 +90,7 @@ func AgentLoop(request *services.ChatRequest, scanner *bufio.Scanner) {
 		// 收集输出和工具调用
 		var toolUses []anthropic.ContentBlockUnion
 		var textOuts []strings.Builder
-		for blkidx, b := range resp.Content {
-			if b.Type == consts.Text && b.Text != "" {
-				var tmp strings.Builder
-				tmp.WriteString(b.Text)
-				textOuts = append(textOuts, tmp)
-			} else if b.Type == consts.ToolUse {
-				// TODO: 收集权限检查情况，对拒绝的提前进行拒绝
-				// permission.CheckPermission(b)
-				toolUses = append(toolUses, b)
-			}
-			logs.Debug(
-				"[AgentLoop] ",
-				"block=", blkidx,
-				"type=", b.Type,
-				"raw=", b.RawJSON(),
-				"\n", "",
-			)
-		}
+		textOuts, toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap := toolExecute.CollectLLMOutput(resp.Content)
 
 		PrintAgentOutput(textOuts)
 		// 无工具调用，本轮结束
@@ -117,35 +98,7 @@ func AgentLoop(request *services.ChatRequest, scanner *bufio.Scanner) {
 			return
 		}
 
-		results := make([]anthropic.ContentBlockParamUnion, len(toolUses))
-		execResults := make([]model.ToolResult, len(toolUses))
-		var toolwg sync.WaitGroup
-
-		// 并发执行
-		for i, block := range toolUses {
-			toolwg.Add(1)
-			go func(idx int, block anthropic.ContentBlockUnion) {
-				defer toolwg.Done()
-				var result = model.ToolResult{}
-				result.Name = fmt.Sprintf("\033[33m>>> %s\033[0m\n", block.Name)
-				output, err := tool.Dispatch(block.Name, block.Input)
-				if err != nil {
-					results[idx] = anthropic.NewToolResultBlock(block.ID, err.Error(), true)
-					result.Result = fmt.Sprintf("\033[31mError: %s\033[0m\n", err.Error())
-				} else {
-					results[idx] = anthropic.NewToolResultBlock(block.ID, output, false)
-					lines := strings.Split(output, "\n")
-					lines = lines[:min(len(lines), consts.ToolMaxPrintOutputLines)]
-					result.Result = fmt.Sprintf("\033[90m%s\033[0m\n", strings.Join(lines, "\n"))
-				}
-				execResults[i] = result
-			}(i, block)
-
-		}
-		toolwg.Wait()
-		for _, r := range execResults {
-			fmt.Printf("%s%s", r.Name, r.Result)
-		}
+		results := toolExecute.ToolExecution(toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap, scanner)
 		request.Messages = append(request.Messages, anthropic.NewUserMessage(results...))
 	}
 }

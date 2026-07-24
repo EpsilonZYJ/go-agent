@@ -13,14 +13,13 @@ func CheckPermission(block anthropic.ContentBlockUnion) (consts.PermissionCode, 
 	var raw map[string]string
 	err := json.Unmarshal(block.Input, &raw)
 	if err != nil {
-		return consts.PermissionInputInvalid, nil
+		return consts.PermissionInputInvalid, fmt.Errorf("cannot parse input")
 	}
-	command, ok := raw["command"]
-	if !ok {
-		return consts.PermissionInputInvalid, nil
-	}
-
 	if block.Name == consts.ToolBash {
+		command, ok := raw["command"]
+		if !ok {
+			return consts.PermissionInputInvalid, fmt.Errorf("tool bash command not found")
+		}
 		err = check_deny_list(command)
 		if err != nil {
 			return consts.PermissionDeny, fmt.Errorf("\n\033[31m⛔ %s\033[0m\n", err.Error())
@@ -28,7 +27,7 @@ func CheckPermission(block anthropic.ContentBlockUnion) (consts.PermissionCode, 
 	}
 	err = check_rules(block.Name, raw)
 	if err != nil {
-		return consts.PermissionAskUser, nil
+		return consts.PermissionAskUser, err
 	}
 	return consts.PermissionAllow, nil
 }
