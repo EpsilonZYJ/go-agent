@@ -25,7 +25,7 @@ func CheckPermission(block anthropic.ContentBlockUnion) (consts.PermissionCode, 
 			return consts.PermissionDeny, fmt.Errorf("\n\033[31m⛔ %s\033[0m\n", err.Error())
 		}
 	}
-	err = check_rules(block.Name, raw)
+	err = checkRules(block.Name, raw)
 	if err != nil {
 		return consts.PermissionAskUser, err
 	}

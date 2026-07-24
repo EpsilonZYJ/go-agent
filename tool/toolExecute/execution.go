@@ -118,7 +118,7 @@ func ToolExecution(
 					fmt.Printf("\033[90m%s\033[0m\n", strings.Join(lines, "\n"))
 				}
 			}
-			if curAskIdx == len(askIndex) {
+			if curAskIdx >= len(askIndex)-1 {
 				curAskIdx++
 				curIdx = len(toolUseList)
 			} else {

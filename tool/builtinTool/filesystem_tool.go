@@ -8,6 +8,7 @@ import (
 	"go-agent/configs"
 	"go-agent/services"
 	"go-agent/tool"
+	"go-agent/utils/files"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,35 +34,8 @@ type editInput struct {
 	NewText string `json:"new_text" jsonschema:"required" jsonschema_description:"The new text to replace the origin."`
 }
 
-func SafePath(p string) (string, error) {
-	var path string
-	var workdir string
-
-	workdir, err := filepath.Abs(configs.SysCfg.CurDir)
-	if err != nil {
-		return "", err
-	}
-
-	if filepath.IsAbs(p) {
-		path = p
-	} else {
-		path, err = filepath.Abs(filepath.Join(workdir, p))
-		if err != nil {
-			return "", err
-		}
-	}
-	rel, err := filepath.Rel(workdir, path)
-	if err != nil {
-		return "", err
-	}
-	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return "", fmt.Errorf("path escapes workspace: %s", path)
-	}
-	return path, nil
-}
-
 func RunRead(path string, limit int) (string, error) {
-	path, err := SafePath(path)
+	path, err := files.SafePath(path)
 	if err != nil {
 		return "", fmt.Errorf("error: %v", err)
 	}
@@ -83,7 +57,7 @@ func RunRead(path string, limit int) (string, error) {
 }
 
 func RunWrite(path string, content string) (string, error) {
-	path, err := SafePath(path)
+	path, err := files.SafePath(path)
 	if err != nil {
 		return "", fmt.Errorf("error: %v", err)
 	}
@@ -102,7 +76,7 @@ func RunWrite(path string, content string) (string, error) {
 }
 
 func RunEdit(path string, oldtxt string, newtxt string) (string, error) {
-	path, err := SafePath(path)
+	path, err := files.SafePath(path)
 	if err != nil {
 		return "", fmt.Errorf("error: %v", err)
 	}
