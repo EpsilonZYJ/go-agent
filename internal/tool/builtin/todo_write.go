@@ -141,7 +141,7 @@ func RunTodoWrite(todos any) (string, error) {
 		icon := icons[string(t.Status)]
 		lines = append(lines, fmt.Sprintf("  [%s] %s", icon, t.Content))
 	}
-	fmt.Printf("%s", strings.Join(lines, "\n"))
+	fmt.Printf("%s\n", strings.Join(lines, "\n"))
 	return fmt.Sprintf("Updated %d tasks", len(currentTodos)), nil
 }
 
