@@ -24,3 +24,5 @@ const (
 const (
 	ToolExecuteBatch = 16
 )
+
+const TodoReminderRounds = 3

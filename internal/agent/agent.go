@@ -7,21 +7,52 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
 	"go-agent/internal/consts"
 	"go-agent/internal/errs"
 	"go-agent/internal/llm"
 	"go-agent/internal/logs"
 	"go-agent/internal/tool/execute"
-	"net/http"
-	"strings"
-	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
 
+var (
+	roundSinceTodo int = 0
+	syncRST        sync.RWMutex
+)
+
+func RoundSinceTodoSetZero() {
+	syncRST.Lock()
+	defer syncRST.Unlock()
+	roundSinceTodo = 0
+}
+
+func GetRoundSinceTodo() int {
+	syncRST.RLock()
+	defer syncRST.RUnlock()
+	return roundSinceTodo
+}
+
+func IncreaseRoundSinceTodoByOne() {
+	syncRST.Lock()
+	defer syncRST.Unlock()
+	roundSinceTodo++
+}
+
 func AgentLoop(request *llm.ChatRequest, scanner *bufio.Scanner) {
 	var trials int = 0
 	for {
+		// 添加todo reminder
+		if GetRoundSinceTodo() >= consts.TodoReminderRounds && len(request.Messages) != 0 {
+			request.AddUserContent("<reminder>Update your todos.</reminder>")
+			roundSinceTodo = 0
+		}
+
 		// 创建请求
 		ctx, cancel := context.WithTimeout(context.Background(), consts.RequestTimeout)
 		resp, err := llm.Client.Messages.New(
@@ -63,6 +94,7 @@ func AgentLoop(request *llm.ChatRequest, scanner *bufio.Scanner) {
 		var toolUses []anthropic.ContentBlockUnion
 		var textOuts []strings.Builder
 		textOuts, toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap := execute.CollectLLMOutput(resp.Content)
+		IncreaseRoundSinceTodoByOne()
 
 		PrintAgentOutput(textOuts)
 		// 无工具调用，本轮结束

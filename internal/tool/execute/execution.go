@@ -3,12 +3,14 @@ package execute
 import (
 	"bufio"
 	"fmt"
+	"strings"
+	"sync"
+
+	"go-agent/internal/agent"
 	"go-agent/internal/consts"
 	"go-agent/internal/model"
 	"go-agent/internal/tool"
 	"go-agent/internal/tool/permission"
-	"strings"
-	"sync"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -27,7 +29,7 @@ func batchExecution(
 		toolwg.Add(1)
 		go func(idx int, block anthropic.ContentBlockUnion) {
 			defer toolwg.Done()
-			var result = model.ToolResult{}
+			result := model.ToolResult{}
 			result.Name = fmt.Sprintf("\033[33m>>> %s\033[0m\n", block.Name)
 			output, err := tool.Dispatch(block.Name, block.Input)
 			if err != nil {
@@ -112,6 +114,9 @@ func ToolExecution(
 					respToolExecutionResults[curIdx] = anthropic.NewToolResultBlock(toolUseList[curIdx].ID, err.Error(), true)
 					fmt.Printf("\033[31mError: %s\033[0m\n", err.Error())
 				} else {
+					if toolUseList[curIdx].Name == consts.ToolTodoWrite {
+						agent.RoundSinceTodoSetZero()
+					}
 					respToolExecutionResults[curIdx] = anthropic.NewToolResultBlock(toolUseList[curIdx].ID, output, false)
 					lines := strings.Split(output, "\n")
 					lines = lines[:min(len(lines), consts.ToolMaxPrintOutputLines)]
