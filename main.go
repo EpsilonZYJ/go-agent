@@ -8,6 +8,7 @@ import (
 	"go-agent/internal/agent"
 	"go-agent/internal/config"
 	"go-agent/internal/consts"
+	"go-agent/internal/hooks"
 	"go-agent/internal/llm"
 	"go-agent/internal/tool/builtin"
 	"os"
@@ -51,6 +52,7 @@ func main() {
 		fmt.Printf("register tools failed: %v\n", err)
 		os.Exit(consts.ExitRegisterError)
 	}
+	hooks.RegisterBuiltinObservers()
 
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {
@@ -68,6 +70,7 @@ func main() {
 			fmt.Println("Bye!")
 			break
 		}
+		hooks.TriggerUserPromptSubmit(query)
 		req.AddUserContent(query)
 		agent.AgentLoop(req, scanner)
 	}

@@ -14,6 +14,7 @@ import (
 
 	"go-agent/internal/consts"
 	"go-agent/internal/errs"
+	"go-agent/internal/hooks"
 	"go-agent/internal/llm"
 	"go-agent/internal/logs"
 	"go-agent/internal/tool/execute"
@@ -99,6 +100,7 @@ func AgentLoop(request *llm.ChatRequest, scanner *bufio.Scanner) {
 		PrintAgentOutput(textOuts)
 		// 无工具调用，本轮结束
 		if resp.StopReason != anthropic.StopReasonToolUse || len(toolUses) == 0 {
+			hooks.TriggerStop(request.Messages)
 			return
 		}
 

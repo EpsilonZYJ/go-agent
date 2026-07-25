@@ -12,6 +12,9 @@ const (
 	ToolMaxPrintOutputLines = 5
 )
 
+// 工具输出字符数超过该值时，由 PostToolUse 的大输出观察者告警
+const LargeOutputChars = 100000
+
 const (
 	ToolBash      = "bash"
 	ToolReadFile  = "read_file"

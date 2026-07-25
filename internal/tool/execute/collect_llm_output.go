@@ -2,6 +2,7 @@ package execute
 
 import (
 	"go-agent/internal/consts"
+	"go-agent/internal/hooks"
 	"go-agent/internal/logs"
 	"go-agent/internal/tool/permission"
 	"strings"
@@ -37,7 +38,8 @@ func CollectLLMOutput(respContent []anthropic.ContentBlockUnion) (
 			tmp.WriteString(b.Text)
 			textOuts = append(textOuts, tmp)
 		} else if b.Type == consts.ToolUse {
-			// TODO: 收集权限检查情况，对拒绝的提前进行拒绝
+			// 通知型 PreToolUse hook（如日志），权限决策仍由 permission 子系统独立完成
+			hooks.TriggerPreToolUse(b)
 			checkPermission, err := permission.CheckPermission(b)
 			toolUseList = append(toolUseList, b)
 			switch checkPermission {

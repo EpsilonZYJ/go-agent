@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"go-agent/internal/consts"
+	"go-agent/internal/hooks"
 	"go-agent/internal/model"
 	"go-agent/internal/tool"
 	"go-agent/internal/tool/permission"
@@ -35,6 +36,7 @@ func batchExecution(
 				(*pRespToolExecutionResults)[idx] = anthropic.NewToolResultBlock(block.ID, err.Error(), true)
 				result.Result = fmt.Sprintf("\033[31mError: %s\033[0m\n", err.Error())
 			} else {
+				hooks.TriggerPostToolUse(block, output)
 				(*pRespToolExecutionResults)[idx] = anthropic.NewToolResultBlock(block.ID, output, false)
 				lines := strings.Split(output, "\n")
 				lines = lines[:min(len(lines), consts.ToolMaxPrintOutputLines)]
@@ -113,6 +115,7 @@ func ToolExecution(
 					respToolExecutionResults[curIdx] = anthropic.NewToolResultBlock(toolUseList[curIdx].ID, err.Error(), true)
 					fmt.Printf("\033[31mError: %s\033[0m\n", err.Error())
 				} else {
+					hooks.TriggerPostToolUse(toolUseList[curIdx], output)
 					respToolExecutionResults[curIdx] = anthropic.NewToolResultBlock(toolUseList[curIdx].ID, output, false)
 					lines := strings.Split(output, "\n")
 					lines = lines[:min(len(lines), consts.ToolMaxPrintOutputLines)]
