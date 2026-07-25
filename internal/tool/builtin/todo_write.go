@@ -1,0 +1,152 @@
+// Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
+
+package builtin
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+	"sync"
+
+	"go-agent/internal/consts"
+	"go-agent/internal/llm"
+	"go-agent/internal/tool"
+)
+
+type TodoStatus string
+
+const (
+	Pending    TodoStatus = "pending"
+	InProgress TodoStatus = "in_progress"
+	Completed  TodoStatus = "completed"
+)
+
+type Todo struct {
+	Content string     `json:"content" jsonschema:"required"`
+	Status  TodoStatus `json:"status" jsonschema:"required,enum=pending,enum=in_progress,enum=completed"`
+}
+
+// todoWriteInput 是 todo_write 的入参：{"todos": [...]}，对应 Python 里 todos 数组对象
+type todoWriteInput struct {
+	Todos []Todo `json:"todos" jsonschema:"required"`
+}
+
+var (
+	todoMu       sync.RWMutex
+	currentTodos = []Todo{}
+)
+
+func validateTodos(todos []Todo) ([]Todo, error) {
+	for i, t := range todos {
+		if t.Content == "" || t.Status == "" {
+			return nil, fmt.Errorf("Error: todos[%d] missing 'content' or 'status'", i)
+		}
+		switch t.Status {
+		case Pending, InProgress, Completed:
+		default:
+			return nil, fmt.Errorf("Error: todos[%d] has invalid status '%s'", i, t.Status)
+		}
+	}
+	return todos, nil
+}
+
+func normalizeTodos(todos any) ([]Todo, error) {
+	if s, ok := todos.(string); ok {
+		var parsed any
+		if err := json.Unmarshal([]byte(s), &parsed); err != nil {
+			return nil, fmt.Errorf("Error: todos must be a list or JSON array string")
+		}
+		todos = parsed
+	}
+
+	var rawList []any
+	switch v := todos.(type) {
+	case []Todo:
+		return validateTodos(v)
+	case []any:
+		rawList = v
+	case []map[string]any:
+		rawList = make([]any, len(v))
+		for i, m := range v {
+			rawList[i] = m
+		}
+	default:
+		// 尝试 JSON 往返（兼容 map[string]interface{} 切片等）
+		b, err := json.Marshal(todos)
+		if err != nil {
+			return nil, fmt.Errorf("Error: todos must be a list")
+		}
+		if err := json.Unmarshal(b, &rawList); err != nil {
+			return nil, fmt.Errorf("Error: todos must be a list")
+		}
+	}
+
+	result := make([]Todo, 0, len(rawList))
+	for i, item := range rawList {
+		m, ok := item.(map[string]any)
+		if !ok {
+			b, err := json.Marshal(item)
+			if err != nil {
+				return nil, fmt.Errorf("Error: todos[%d] must be an object", i)
+			}
+			var tmp map[string]any
+			if err := json.Unmarshal(b, &tmp); err != nil {
+				return nil, fmt.Errorf("Error: todos[%d] must be an object", i)
+			}
+			m = tmp
+		}
+
+		content, _ := m["content"].(string)
+		status, _ := m["status"].(string)
+		if content == "" || status == "" {
+			// 字段缺失或类型不对
+			if _, hasC := m["content"]; !hasC {
+				return nil, fmt.Errorf("Error: todos[%d] missing 'content' or 'status'", i)
+			}
+			if _, hasS := m["status"]; !hasS {
+				return nil, fmt.Errorf("Error: todos[%d] missing 'content' or 'status'", i)
+			}
+			// content/status 存在但不是 string
+			return nil, fmt.Errorf("Error: todos[%d] missing 'content' or 'status'", i)
+		}
+
+		switch status {
+		case string(Pending), string(InProgress), string(Completed):
+		default:
+			return nil, fmt.Errorf("Error: todos[%d] has invalid status '%s'", i, status)
+		}
+		result = append(result, Todo{Content: content, Status: TodoStatus(status)})
+	}
+	return result, nil
+}
+
+func RunTodoWrite(todos any) (string, error) {
+	normalizedTodos, err := normalizeTodos(todos)
+	if err != nil {
+		return "", err
+	}
+
+	todoMu.Lock()
+	currentTodos = normalizedTodos
+	todoMu.Unlock()
+
+	lines := []string{"\n\033[33m## Current Tasks\033[0m"}
+	icons := map[string]string{
+		"pending":     " ",
+		"in_progress": "\033[36m▸\033[0m",
+		"completed":   "\033[32m✓\033[0m",
+	}
+
+	for _, t := range currentTodos {
+		icon := icons[string(t.Status)]
+		lines = append(lines, fmt.Sprintf("  [%s] %s", icon, t.Content))
+	}
+	fmt.Printf("%s", strings.Join(lines, "\n"))
+	return fmt.Sprintf("Updated %d tasks", len(currentTodos)), nil
+}
+
+func registerTodoWrite(req *llm.ChatRequest) error {
+	return tool.RegisterTool(req, consts.ToolTodoWrite, "Create and manage a task list for your current coding session.", func(in todoWriteInput) (string, error) {
+		return RunTodoWrite(in.Todos)
+	})
+}

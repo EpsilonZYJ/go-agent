@@ -13,5 +13,8 @@ func RegisterBuiltinTools(req *llm.ChatRequest) error {
 	if err := registerToolFileSystem(req); err != nil {
 		return err
 	}
+	if err := registerTodoWrite(req); err != nil {
+		return err
+	}
 	return nil
 }

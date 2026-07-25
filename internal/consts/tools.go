@@ -18,6 +18,7 @@ const (
 	ToolWriteFile = "write_file"
 	ToolEditFile  = "edit_file"
 	ToolGlob      = "glob"
+	ToolTodoWrite = "todo_write"
 )
 
 const (
