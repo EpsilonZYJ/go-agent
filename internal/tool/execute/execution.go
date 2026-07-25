@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"go-agent/internal/agent"
 	"go-agent/internal/consts"
 	"go-agent/internal/model"
 	"go-agent/internal/tool"
@@ -114,9 +113,6 @@ func ToolExecution(
 					respToolExecutionResults[curIdx] = anthropic.NewToolResultBlock(toolUseList[curIdx].ID, err.Error(), true)
 					fmt.Printf("\033[31mError: %s\033[0m\n", err.Error())
 				} else {
-					if toolUseList[curIdx].Name == consts.ToolTodoWrite {
-						agent.RoundSinceTodoSetZero()
-					}
 					respToolExecutionResults[curIdx] = anthropic.NewToolResultBlock(toolUseList[curIdx].ID, output, false)
 					lines := strings.Split(output, "\n")
 					lines = lines[:min(len(lines), consts.ToolMaxPrintOutputLines)]

@@ -50,7 +50,7 @@ func AgentLoop(request *llm.ChatRequest, scanner *bufio.Scanner) {
 		// 添加todo reminder
 		if GetRoundSinceTodo() >= consts.TodoReminderRounds && len(request.Messages) != 0 {
 			request.AddUserContent("<reminder>Update your todos.</reminder>")
-			roundSinceTodo = 0
+			RoundSinceTodoSetZero()
 		}
 
 		// 创建请求
@@ -103,6 +103,13 @@ func AgentLoop(request *llm.ChatRequest, scanner *bufio.Scanner) {
 		}
 
 		results := execute.ToolExecution(toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap, scanner)
+		// 本轮若调用了 todo_write（无论 allow/ask 路径），重置提醒计数
+		for _, tu := range toolUses {
+			if tu.Name == consts.ToolTodoWrite {
+				RoundSinceTodoSetZero()
+				break
+			}
+		}
 		request.Messages = append(request.Messages, anthropic.NewUserMessage(results...))
 	}
 }
