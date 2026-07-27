@@ -20,7 +20,7 @@ func askUser(tool_name string, args map[string]any, reason string) consts.Permis
 	fmt.Printf("   Allow? [y/N] ")
 	var tries int = 0
 	for !session.ReadLine() {
-		if err := session.ScanerErr(); err != nil {
+		if err := session.ScannerErr(); err != nil {
 			fmt.Println(err)
 			tries++
 		}

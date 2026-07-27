@@ -17,7 +17,7 @@ func ReadLine() bool {
 	return termScanner.Scan()
 }
 
-func ScanerErr() error {
+func ScannerErr() error {
 	return termScanner.Err()
 }
 

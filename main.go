@@ -34,6 +34,12 @@ func InitAgent() error {
 			"For complex sub-problems, use the task tool to spawn a subagent.",
 		config.SysCfg.CurDir,
 	)
+	config.SysCfg.SubSystemPrompt = fmt.Sprintf(
+		"You are a coding agent at %s. "+
+			"Complete the task you were given, then return a concise summary. "+
+			"Do not delegate further.",
+		config.SysCfg.CurDir,
+	)
 	if config.ModelCfg.Model == "" || config.SysCfg.Url == "" || config.SysCfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}
@@ -62,7 +68,7 @@ func main() {
 	for {
 		fmt.Printf("\033[36mUser >> \033[0m")
 		if !session.ReadLine() {
-			if err := session.ScanerErr(); err != nil {
+			if err := session.ScannerErr(); err != nil {
 				fmt.Println(err)
 			}
 			os.Exit(consts.ExitInputError)
