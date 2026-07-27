@@ -67,13 +67,13 @@ func main() {
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {
 		fmt.Printf("\033[36mUser >> \033[0m")
-		if !session.ReadLine() {
-			if err := session.ScannerErr(); err != nil {
-				fmt.Println(err)
-			}
+
+		query, err := session.ReadLine()
+		if err != nil {
+			fmt.Println(err)
 			os.Exit(consts.ExitInputError)
 		}
-		query := strings.TrimSpace(session.LineText())
+		query = strings.TrimSpace(query)
 		if query == "" {
 			continue
 		} else if query == "/exit" {

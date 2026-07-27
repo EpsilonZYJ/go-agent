@@ -11,16 +11,9 @@ var (
 	termMu      sync.Mutex
 )
 
-func ReadLine() bool {
+func ReadLine() (string, error) {
 	termMu.Lock()
 	defer termMu.Unlock()
-	return termScanner.Scan()
-}
-
-func ScannerErr() error {
-	return termScanner.Err()
-}
-
-func LineText() string {
-	return termScanner.Text()
+	termScanner.Scan()
+	return termScanner.Text(), termScanner.Err()
 }

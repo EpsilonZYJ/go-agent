@@ -19,16 +19,15 @@ func askUser(tool_name string, args map[string]any, reason string) consts.Permis
 	fmt.Printf("         )")
 	fmt.Printf("   Allow? [y/N] ")
 	var tries int = 0
-	for !session.ReadLine() {
-		if err := session.ScannerErr(); err != nil {
-			fmt.Println(err)
-			tries++
-		}
+	choice, err := session.ReadLine()
+	for err != nil {
+		fmt.Println(err)
+		tries++
 		if tries >= consts.IOMaxTries {
 			os.Exit(consts.IOMaxTries)
 		}
 	}
-	choice := strings.ToLower(strings.TrimSpace(session.LineText()))
+	choice = strings.ToLower(strings.TrimSpace(choice))
 	if choice == "y" || choice == "yes" {
 		return consts.PermissionAllow
 	}
