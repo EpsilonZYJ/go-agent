@@ -1,14 +1,16 @@
+// Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
+
 package permission
 
 import (
-	"bufio"
 	"fmt"
 	"go-agent/internal/consts"
+	"go-agent/internal/session"
 	"os"
 	"strings"
 )
 
-func askUser(tool_name string, args map[string]any, reason string, scanner *bufio.Scanner) consts.PermissionCode {
+func askUser(tool_name string, args map[string]any, reason string) consts.PermissionCode {
 	fmt.Printf("\n\033[33m⚠  %s\033[0m\n", reason)
 	fmt.Printf("   Tool: %s(\n", tool_name)
 	for k, v := range args {
@@ -17,8 +19,8 @@ func askUser(tool_name string, args map[string]any, reason string, scanner *bufi
 	fmt.Printf("         )")
 	fmt.Printf("   Allow? [y/N] ")
 	var tries int = 0
-	for !scanner.Scan() {
-		if err := scanner.Err(); err != nil {
+	for !session.ReadLine() {
+		if err := session.ScanerErr(); err != nil {
 			fmt.Println(err)
 			tries++
 		}
@@ -26,7 +28,7 @@ func askUser(tool_name string, args map[string]any, reason string, scanner *bufi
 			os.Exit(consts.IOMaxTries)
 		}
 	}
-	choice := strings.ToLower(strings.TrimSpace(scanner.Text()))
+	choice := strings.ToLower(strings.TrimSpace(session.LineText()))
 	if choice == "y" || choice == "yes" {
 		return consts.PermissionAllow
 	}

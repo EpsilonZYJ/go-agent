@@ -13,7 +13,20 @@ func RegisterBuiltinTools(req *llm.ChatRequest) error {
 	if err := registerToolFileSystem(req); err != nil {
 		return err
 	}
-	if err := registerTodoWrite(req); err != nil {
+	if err := registerToolTodoWrite(req); err != nil {
+		return err
+	}
+	if err := registerToolSubagent(req); err != nil {
+		return err
+	}
+	return nil
+}
+
+func SubAgentRegisterBuiltinTools(req *llm.ChatRequest) error {
+	if err := registerToolBash(req); err != nil {
+		return err
+	}
+	if err := registerToolFileSystem(req); err != nil {
 		return err
 	}
 	return nil

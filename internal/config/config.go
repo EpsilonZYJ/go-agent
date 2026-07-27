@@ -3,10 +3,11 @@
 package config
 
 type SystemConfig struct {
-	Url          string `json:"url"`
-	ApiKey       string `json:"api_key"`
-	SystemPrompt string `json:"system_prompt"`
-	CurDir       string `json:"cur_dir"`
+	Url             string `json:"url"`
+	ApiKey          string `json:"api_key"`
+	SystemPrompt    string `json:"system_prompt"`
+	SubSystemPrompt string `json:"sub_system_prompt"`
+	CurDir          string `json:"cur_dir"`
 }
 
 type ModelConfig struct {

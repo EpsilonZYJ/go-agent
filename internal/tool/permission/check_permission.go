@@ -1,7 +1,8 @@
+// Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
+
 package permission
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"go-agent/internal/consts"
@@ -32,12 +33,12 @@ func CheckPermission(block anthropic.ContentBlockUnion) (consts.PermissionCode, 
 	return consts.PermissionAllow, nil
 }
 
-func AskUser(block anthropic.ContentBlockUnion, scanner *bufio.Scanner, reason string) consts.PermissionCode {
+func AskUser(block anthropic.ContentBlockUnion, reason string) consts.PermissionCode {
 	var raw map[string]any
 	err := json.Unmarshal(block.Input, &raw)
 	if err != nil {
 		return consts.PermissionInputInvalid
 	}
-	decision := askUser(block.Name, raw, reason, scanner)
+	decision := askUser(block.Name, raw, reason)
 	return decision
 }

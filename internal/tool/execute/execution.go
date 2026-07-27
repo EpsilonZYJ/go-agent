@@ -1,7 +1,8 @@
+// Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
+
 package execute
 
 import (
-	"bufio"
 	"fmt"
 	"strings"
 	"sync"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
+
+var printMu sync.Mutex
 
 func batchExecution(
 	toolUseList []anthropic.ContentBlockUnion,
@@ -85,17 +88,7 @@ func toolExecutionWithoutAsk(
 	return
 }
 
-func ToolExecution(
-	toolUseList []anthropic.ContentBlockUnion,
-	allowIndex []int,
-	denyIndex []int,
-	askIndex []int,
-	errIndex []int,
-	denyErrMap map[int]string,
-	errErrMap map[int]string,
-	askReasonMap map[int]string,
-	scanner *bufio.Scanner,
-) []anthropic.ContentBlockParamUnion {
+func ToolExecution(toolUseList []anthropic.ContentBlockUnion, allowIndex []int, denyIndex []int, askIndex []int, errIndex []int, denyErrMap map[int]string, errErrMap map[int]string, askReasonMap map[int]string) []anthropic.ContentBlockParamUnion {
 	respToolExecutionResults, printableResults := toolExecutionWithoutAsk(toolUseList, allowIndex, denyIndex, errIndex, denyErrMap, errErrMap)
 	var curAskIdx int = 0 // 当前askIndex的下标
 	var curIdx int
@@ -106,7 +99,8 @@ func ToolExecution(
 	}
 	for idx, toolUse := range toolUseList {
 		if idx == curIdx {
-			decision := permission.AskUser(toolUse, scanner, askReasonMap[curIdx])
+			printMu.Lock()
+			decision := permission.AskUser(toolUse, askReasonMap[curIdx])
 			if decision == consts.PermissionDeny {
 				respToolExecutionResults[curIdx] = anthropic.NewToolResultBlock(toolUseList[curIdx].ID, "Permission denied.", true)
 			} else {
@@ -129,6 +123,7 @@ func ToolExecution(
 				curAskIdx++
 				curIdx = askIndex[curAskIdx]
 			}
+			printMu.Unlock()
 		} else if idx < curIdx {
 			fmt.Printf("%s%s", printableResults[idx].Name, printableResults[idx].Result)
 		}

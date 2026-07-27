@@ -145,7 +145,7 @@ func RunTodoWrite(todos any) (string, error) {
 	return fmt.Sprintf("Updated %d tasks", len(currentTodos)), nil
 }
 
-func registerTodoWrite(req *llm.ChatRequest) error {
+func registerToolTodoWrite(req *llm.ChatRequest) error {
 	return tool.RegisterTool(req, consts.ToolTodoWrite, "Create and manage a task list for your current coding session.", func(in todoWriteInput) (string, error) {
 		return RunTodoWrite(in.Todos)
 	})

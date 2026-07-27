@@ -12,7 +12,7 @@ const (
 	ToolMaxPrintOutputLines = 5
 )
 
-// 工具输出字符数超过该值时，由 PostToolUse 的大输出观察者告警
+// LargeOutputChars 工具输出字符数超过该值时，由 PostToolUse 的大输出观察者告警
 const LargeOutputChars = 100000
 
 const (
@@ -22,6 +22,7 @@ const (
 	ToolEditFile  = "edit_file"
 	ToolGlob      = "glob"
 	ToolTodoWrite = "todo_write"
+	ToolSubagent  = "task"
 )
 
 const (
@@ -29,3 +30,5 @@ const (
 )
 
 const TodoReminderRounds = 3
+
+const SubAgentSafetyLimit = 30

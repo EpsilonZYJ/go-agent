@@ -3,10 +3,10 @@
 package agent
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"go-agent/internal/utils"
 	"net/http"
 	"strings"
 	"sync"
@@ -45,7 +45,7 @@ func IncreaseRoundSinceTodoByOne() {
 	roundSinceTodo++
 }
 
-func AgentLoop(request *llm.ChatRequest, scanner *bufio.Scanner) {
+func AgentLoop(request *llm.ChatRequest) {
 	var trials int = 0
 	for {
 		// 添加todo reminder
@@ -97,14 +97,14 @@ func AgentLoop(request *llm.ChatRequest, scanner *bufio.Scanner) {
 		textOuts, toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap := execute.CollectLLMOutput(resp.Content)
 		IncreaseRoundSinceTodoByOne()
 
-		PrintAgentOutput(textOuts)
+		utils.PrintAgentOutput(textOuts)
 		// 无工具调用，本轮结束
 		if resp.StopReason != anthropic.StopReasonToolUse || len(toolUses) == 0 {
 			hooks.TriggerStop(request.Messages)
 			return
 		}
 
-		results := execute.ToolExecution(toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap, scanner)
+		results := execute.ToolExecution(toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap)
 		// 本轮若调用了 todo_write（无论 allow/ask 路径），重置提醒计数
 		for _, tu := range toolUses {
 			if tu.Name == consts.ToolTodoWrite {
@@ -114,13 +114,4 @@ func AgentLoop(request *llm.ChatRequest, scanner *bufio.Scanner) {
 		}
 		request.Messages = append(request.Messages, anthropic.NewUserMessage(results...))
 	}
-}
-
-func PrintAgentOutput(textOuts []strings.Builder) {
-	for _, textOut := range textOuts {
-		if textOut.Len() > 0 {
-			fmt.Println("\033[32mAgent: \n\n \033[0m" + textOut.String())
-		}
-	}
-	fmt.Println()
 }
