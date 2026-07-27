@@ -13,7 +13,6 @@ import (
 	"go-agent/internal/logs"
 	"go-agent/internal/tool"
 	"go-agent/internal/tool/execute"
-	"go-agent/internal/utils"
 	"net/http"
 	"slices"
 	"strings"
@@ -37,7 +36,7 @@ func extractText(content []anthropic.ContentBlockParamUnion) string {
 }
 
 func RunSubagent(description string) (string, error) {
-	fmt.Printf("\n\033[35m[Subagent spawned]\033[0m")
+	fmt.Printf("\n\033[35m[Subagent spawned]\033[0m\n")
 	req := llm.NewChatRequest(config.ModelCfg.Model, config.ModelCfg.MaxTokens, config.SysCfg.SubSystemPrompt)
 	err := SubAgentRegisterBuiltinTools(req)
 	if err != nil {
@@ -82,10 +81,8 @@ func RunSubagent(description string) (string, error) {
 		req.Messages = append(req.Messages, resp.ToParam())
 
 		var toolUses []anthropic.ContentBlockUnion
-		var textOuts []strings.Builder
-		textOuts, toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap := execute.CollectLLMOutput(resp.Content)
+		_, toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap := execute.CollectLLMOutput(resp.Content)
 
-		utils.PrintAgentOutput(textOuts)
 		// 无工具调用，本轮结束
 		if resp.StopReason != anthropic.StopReasonToolUse || len(toolUses) == 0 {
 			break
@@ -114,7 +111,7 @@ func RunSubagent(description string) (string, error) {
 			result = "Subagent stopped after 30 turns without final answer."
 		}
 	}
-	fmt.Printf("\033[35m[Subagent done]\033[0m")
+	fmt.Printf("\033[35m[Subagent done]\033[0m\n")
 	return result, nil
 }
 
