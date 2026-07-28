@@ -4,8 +4,8 @@ package permission
 
 import (
 	"fmt"
-	"go-agent/internal/baseImpl"
-	"go-agent/internal/files"
+	"go-agent/internal/tool/files"
+	"slices"
 	"strings"
 )
 
@@ -35,7 +35,7 @@ var permissionRules = []rule{
 
 func checkRules(tool_name string, args map[string]any) error {
 	for _, r := range permissionRules {
-		if baseImpl.ListContains(r.Tools, tool_name) {
+		if slices.Contains(r.Tools, tool_name) {
 			if r.CheckPass(args) {
 				return nil
 			} else {
