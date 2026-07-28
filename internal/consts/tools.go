@@ -32,4 +32,5 @@ const (
 
 const TodoReminderRounds = 3
 
+// SubAgentSafetyLimit subagent最大执行轮次
 const SubAgentSafetyLimit = 30

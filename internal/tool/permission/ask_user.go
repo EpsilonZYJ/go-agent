@@ -24,7 +24,7 @@ func askUser(tool_name string, args map[string]any, reason string) consts.Permis
 		fmt.Println(err)
 		tries++
 		if tries >= consts.IOMaxTries {
-			os.Exit(consts.IOMaxTries)
+			os.Exit(consts.ExitIOMaxTriesError)
 		}
 	}
 	choice = strings.ToLower(strings.TrimSpace(choice))

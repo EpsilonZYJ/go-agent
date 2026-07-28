@@ -2,4 +2,5 @@
 
 package consts
 
+// IOMaxTries 最大IO尝试次数
 const IOMaxTries = 3

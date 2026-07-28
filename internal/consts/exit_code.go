@@ -7,4 +7,5 @@ const (
 	ExitEnvError
 	ExitInputError
 	ExitRegisterError
+	ExitIOMaxTriesError
 )
