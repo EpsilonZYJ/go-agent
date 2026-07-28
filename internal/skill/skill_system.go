@@ -7,12 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"go-agent/internal/config"
 )
 
-func scanSkills() {
-	entries, err := os.ReadDir(config.SysCfg.SkillsDir)
+func ScanSkills(skillDir string) {
+	entries, err := os.ReadDir(skillDir)
 	if err != nil {
 		return
 	}
@@ -20,7 +18,7 @@ func scanSkills() {
 		if !entry.IsDir() {
 			continue
 		}
-		path := filepath.Join(config.SysCfg.SkillsDir, entry.Name(), "SKILL.md")
+		path := filepath.Join(skillDir, entry.Name(), "SKILL.md")
 		raw, err := os.ReadFile(path)
 		if err != nil {
 			continue
@@ -55,4 +53,12 @@ func ListSkills() string {
 		i++
 	}
 	return strings.Join(skillDesc, "\n")
+}
+
+func GetSkill(name string) (string, error) {
+	skill, ok := skillRegistry[name]
+	if !ok {
+		return "", fmt.Errorf("Skill not found: %s", name)
+	}
+	return skill.Content, nil
 }

@@ -4,16 +4,18 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"go-agent/internal/agent"
 	"go-agent/internal/config"
 	"go-agent/internal/consts"
 	"go-agent/internal/hooks"
 	"go-agent/internal/llm"
 	"go-agent/internal/session"
+	"go-agent/internal/skill"
 	"go-agent/internal/tool/builtin"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -26,22 +28,19 @@ func InitAgent() error {
 	config.SysCfg.Url = os.Getenv("URL")
 	config.SysCfg.ApiKey = os.Getenv("API_KEY")
 	config.SysCfg.CurDir, err = os.Getwd()
+	config.SysCfg.SkillsDir = filepath.Join(config.SysCfg.CurDir, "skills")
+
+	skill.ScanSkills(config.SysCfg.SkillsDir)
 	if err != nil {
 		return fmt.Errorf("get current directory failed: %v", err)
 	}
-	config.SysCfg.SystemPrompt = fmt.Sprintf(
-		"You are a coding agent at %s."+
-			"Before starting any multi-step task, use todo_write to plan your steps. Update status as you go. "+
-			"For complex sub-problems, use the task tool to spawn a subagent.",
-		config.SysCfg.CurDir,
-	)
+	config.SysCfg.SystemPrompt = config.BuildSystem()
 	config.SysCfg.SubSystemPrompt = fmt.Sprintf(
 		"You are a coding agent at %s. "+
 			"Complete the task you were given, then return a concise summary. "+
 			"Do not delegate further.",
 		config.SysCfg.CurDir,
 	)
-	config.SysCfg.SkillsDir = filepath.Join(config.SysCfg.CurDir, "skills")
 	if config.ModelCfg.Model == "" || config.SysCfg.Url == "" || config.SysCfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}

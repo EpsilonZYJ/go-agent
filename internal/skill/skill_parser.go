@@ -17,7 +17,7 @@ func parseFrontmatter(text string) (map[string]string, string) {
 		return map[string]string{}, text
 	}
 	var metadata map[string]string
-	if err := yaml.Unmarshal([]byte(text), &metadata); err != nil {
+	if err := yaml.Unmarshal([]byte(parts[1]), &metadata); err != nil {
 		metadata = map[string]string{}
 	}
 	return metadata, strings.TrimSpace(parts[2])

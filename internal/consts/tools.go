@@ -23,6 +23,7 @@ const (
 	ToolGlob      = "glob"
 	ToolTodoWrite = "todo_write"
 	ToolSubagent  = "task"
+	ToolLoadSkill = "load_skill"
 )
 
 const (
