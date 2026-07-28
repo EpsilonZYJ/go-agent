@@ -130,7 +130,7 @@ func RunTodoWrite(todos any) (string, error) {
 	currentTodos = normalizedTodos
 	todoMu.Unlock()
 
-	lines := []string{"\n\033[33m## Current Tasks\033[0m"}
+	lines := []string{"\033[33m## Current Tasks\033[0m"}
 	icons := map[string]string{
 		"pending":     " ",
 		"in_progress": "\033[36m▸\033[0m",

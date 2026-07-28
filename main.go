@@ -12,6 +12,7 @@ import (
 	"go-agent/internal/session"
 	"go-agent/internal/tool/builtin"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -40,6 +41,7 @@ func InitAgent() error {
 			"Do not delegate further.",
 		config.SysCfg.CurDir,
 	)
+	config.SysCfg.SkillsDir = filepath.Join(config.SysCfg.CurDir, "skills")
 	if config.ModelCfg.Model == "" || config.SysCfg.Url == "" || config.SysCfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}

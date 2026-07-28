@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
+
 package baseImpl
 
 func ListContains[T comparable](list []T, item T) bool {
