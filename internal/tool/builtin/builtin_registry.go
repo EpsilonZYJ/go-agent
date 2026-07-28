@@ -19,6 +19,9 @@ func RegisterBuiltinTools(req *llm.ChatRequest) error {
 	if err := registerToolSubagent(req); err != nil {
 		return err
 	}
+	if err := registerToolLoadSkill(req); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -27,6 +30,9 @@ func SubAgentRegisterBuiltinTools(req *llm.ChatRequest) error {
 		return err
 	}
 	if err := registerToolFileSystem(req); err != nil {
+		return err
+	}
+	if err := registerToolLoadSkill(req); err != nil {
 		return err
 	}
 	return nil

@@ -56,9 +56,9 @@ func ListSkills() string {
 }
 
 func GetSkill(name string) (string, error) {
-	skill, ok := skillRegistry[name]
+	skillToFind, ok := skillRegistry[name]
 	if !ok {
 		return "", fmt.Errorf("Skill not found: %s", name)
 	}
-	return skill.Content, nil
+	return skillToFind.Content, nil
 }

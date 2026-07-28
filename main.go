@@ -23,27 +23,26 @@ import (
 
 func InitAgent() error {
 	var err error
+
+	// 模型设置
 	config.ModelCfg.Model = os.Getenv("MODEL")
 	config.ModelCfg.MaxTokens = consts.MaxTokens
 	config.SysCfg.Url = os.Getenv("URL")
 	config.SysCfg.ApiKey = os.Getenv("API_KEY")
-	config.SysCfg.CurDir, err = os.Getwd()
-	config.SysCfg.SkillsDir = filepath.Join(config.SysCfg.CurDir, "skills")
-
-	skill.ScanSkills(config.SysCfg.SkillsDir)
-	if err != nil {
-		return fmt.Errorf("get current directory failed: %v", err)
-	}
-	config.SysCfg.SystemPrompt = config.BuildSystem()
-	config.SysCfg.SubSystemPrompt = fmt.Sprintf(
-		"You are a coding agent at %s. "+
-			"Complete the task you were given, then return a concise summary. "+
-			"Do not delegate further.",
-		config.SysCfg.CurDir,
-	)
 	if config.ModelCfg.Model == "" || config.SysCfg.Url == "" || config.SysCfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}
+
+	// 当前项目系统设置
+	config.SysCfg.CurDir, err = os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get current directory failed: %v", err)
+	}
+	config.SysCfg.SkillsDir = filepath.Join(config.SysCfg.CurDir, "skills")
+
+	skill.ScanSkills(config.SysCfg.SkillsDir)
+	config.SysCfg.SystemPrompt = config.BuildSystemPrompt()
+	config.SysCfg.SubSystemPrompt = config.BuildSubSystemPrompt()
 
 	llm.Client = anthropic.NewClient(
 		option.WithBaseURL(config.SysCfg.Url),
