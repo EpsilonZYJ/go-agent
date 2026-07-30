@@ -4,6 +4,8 @@ package compact
 
 import (
 	"go-agent/internal/llm"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -40,4 +42,34 @@ func isToolResultMessage(msg anthropic.MessageParam) bool {
 		}
 	}
 	return false
+}
+
+func toolResultTextBytes(tr *anthropic.ToolResultBlockParam) int {
+	n := 0
+	for _, c := range tr.Content {
+		if c.OfText != nil {
+			n += len(c.OfText.Text)
+		}
+	}
+	return n
+}
+
+func toolResultTextLen(tr *anthropic.ToolResultBlockParam) int {
+	n := 0
+	for _, c := range tr.Content {
+		if c.OfText != nil {
+			n += utf8.RuneCountInString(c.OfText.Text)
+		}
+	}
+	return n
+}
+
+func toolResultText(tr *anthropic.ToolResultBlockParam) string {
+	var b strings.Builder
+	for _, c := range tr.Content {
+		if c.OfText != nil {
+			b.WriteString(c.OfText.Text)
+		}
+	}
+	return b.String()
 }

@@ -39,6 +39,7 @@ func InitAgent() error {
 		return fmt.Errorf("get current directory failed: %v", err)
 	}
 	config.SysCfg.SkillsDir = filepath.Join(config.SysCfg.CurDir, "skills")
+	config.SysCfg.ToolResultDir = filepath.Join(config.SysCfg.CurDir, ".task_outputs", "tool-results")
 
 	skill.ScanSkills(config.SysCfg.SkillsDir)
 	config.SysCfg.SystemPrompt = config.BuildSystemPrompt()

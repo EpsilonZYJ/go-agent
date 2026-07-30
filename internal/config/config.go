@@ -9,6 +9,7 @@ type SystemConfig struct {
 	SubSystemPrompt string `json:"sub_system_prompt"`
 	CurDir          string `json:"cur_dir"`
 	SkillsDir       string `json:"skills_dir"`
+	ToolResultDir   string `json:"tool_result_dir"`
 }
 
 type ModelConfig struct {

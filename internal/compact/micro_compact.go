@@ -49,13 +49,3 @@ func MicroCompact(msgs []anthropic.MessageParam) []anthropic.MessageParam {
 	}
 	return msgs
 }
-
-func toolResultTextLen(tr *anthropic.ToolResultBlockParam) int {
-	n := 0
-	for _, c := range tr.Content {
-		if c.OfText != nil {
-			n += len(c.OfText.Text)
-		}
-	}
-	return n
-}
