@@ -20,14 +20,32 @@ export MODEL="claude-3-5-sonnet-20241022"        # model name
 export LOG_LEVEL=debug                           # optional, enable debug logging
 ```
 
+Alternatively, copy `.env.example` to `.env` and fill in the values. The
+`task` commands below load `.env` automatically.
+
 ### Build & Run
+
+With [Task](https://taskfile.dev) (recommended):
 
 ```bash
 # build
-go build -o build/go_agent .
+task build
+
+# build and start the interactive agent (loads .env)
+task run
+
+# list all available tasks (vet, fmt, tidy, clean, ...)
+task
+```
+
+Or with `go` directly:
+
+```bash
+# build
+go build -o build/go-agent .
 
 # run
-./build/go_agent
+./build/go-agent
 ```
 
 Or run directly:
