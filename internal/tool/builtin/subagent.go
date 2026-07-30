@@ -45,7 +45,7 @@ func RunSubagent(description string) (string, error) {
 	req.AddUserContent(description)
 	var trials int = 0
 
-	for _ = range consts.SubAgentSafetyLimit {
+	for range consts.SubAgentSafetyLimit {
 		ctx, cancel := context.WithTimeout(context.Background(), consts.RequestTimeout)
 		resp, err := llm.Client.Messages.New(
 			ctx,

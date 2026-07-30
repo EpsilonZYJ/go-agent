@@ -10,12 +10,11 @@ import (
 var logger *slog.Logger
 
 func init() {
-	debug := os.Getenv("LOG_LEVEL")
-	level := slog.LevelInfo
-	if debug == "debug" {
-		level = slog.LevelDebug
+	var level slog.Level
+	if err := level.UnmarshalText([]byte(os.Getenv("LOG_LEVEL"))); err != nil {
+		level = slog.LevelInfo
 	}
-	logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: level,
 	}))
 }
