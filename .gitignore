@@ -5,4 +5,5 @@ example/
 go-agent
 .env
 .task/
+.claude/
 

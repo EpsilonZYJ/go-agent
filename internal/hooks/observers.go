@@ -23,8 +23,8 @@ func workdirHook(query string) {
 // logHook: PreToolUse —— 记录每次工具调用（单线程 collect 阶段触发，无需加锁）。
 func logHook(block anthropic.ContentBlockUnion) {
 	args := string(block.Input)
-	if len(args) > 60 {
-		args = args[:60] + "..."
+	if len([]rune(args)) > 60 {
+		args = string([]rune(args)[:60]) + "..."
 	}
 	fmt.Printf("\033[90m[HOOK] %s(%s)\033[0m\n", block.Name, args)
 }
