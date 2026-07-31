@@ -5,7 +5,9 @@ package permission
 import (
 	"encoding/json"
 	"fmt"
+
 	"go-agent/internal/consts"
+	"go-agent/internal/logs"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -14,6 +16,7 @@ func CheckPermission(block anthropic.ContentBlockUnion) (consts.PermissionCode, 
 	var raw map[string]any
 	err := json.Unmarshal(block.Input, &raw)
 	if err != nil {
+		logs.Warn("cannot parse tool input for permission check", "tool", block.Name, "err", err)
 		return consts.PermissionInputInvalid, fmt.Errorf("cannot parse input")
 	}
 	if block.Name == consts.ToolBash {
@@ -28,6 +31,7 @@ func CheckPermission(block anthropic.ContentBlockUnion) (consts.PermissionCode, 
 	}
 	err = checkRules(block.Name, raw)
 	if err != nil {
+		logs.Info("rule triggered ask user", "tool", block.Name, "reason", err.Error())
 		return consts.PermissionAskUser, err
 	}
 	return consts.PermissionAllow, nil

@@ -13,6 +13,7 @@ import (
 	"go-agent/internal/consts"
 	"go-agent/internal/hooks"
 	"go-agent/internal/llm"
+	"go-agent/internal/logs"
 	"go-agent/internal/session"
 	"go-agent/internal/skill"
 	"go-agent/internal/tool/builtin"
@@ -32,14 +33,17 @@ func InitAgent() error {
 	if config.ModelCfg.Model == "" || config.SysCfg.Url == "" || config.SysCfg.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}
+	logs.Info("agent initializing", "model", config.ModelCfg.Model, "url", config.SysCfg.Url)
 
 	// 当前项目系统设置
 	config.SysCfg.CurDir, err = os.Getwd()
 	if err != nil {
+		logs.Warn("get working directory failed", "err", err)
 		return fmt.Errorf("get current directory failed: %v", err)
 	}
 	config.SysCfg.SkillsDir = filepath.Join(config.SysCfg.CurDir, "skills")
 	config.SysCfg.ToolResultDir = filepath.Join(config.SysCfg.CurDir, ".task_outputs", "tool-results")
+	logs.Info("working directory", "dir", config.SysCfg.CurDir)
 
 	skill.ScanSkills(config.SysCfg.SkillsDir)
 	config.SysCfg.SystemPrompt = config.BuildSystemPrompt()
@@ -49,17 +53,20 @@ func InitAgent() error {
 		option.WithBaseURL(config.SysCfg.Url),
 		option.WithAPIKey(config.SysCfg.ApiKey),
 	)
+	logs.Info("agent initialized successfully")
 	return nil
 }
 
 func main() {
 	err := InitAgent()
 	if err != nil {
+		logs.Error("init agent failed", "err", err)
 		fmt.Println(err)
 		os.Exit(consts.ExitEnvError)
 	}
 	req := llm.NewChatRequest(config.ModelCfg.Model, config.ModelCfg.MaxTokens, config.SysCfg.SystemPrompt)
 	if err := builtin.RegisterBuiltinTools(req); err != nil {
+		logs.Error("register builtin tools failed", "err", err)
 		fmt.Printf("register tools failed: %v\n", err)
 		os.Exit(consts.ExitRegisterError)
 	}
@@ -71,6 +78,7 @@ func main() {
 
 		query, err := session.ReadLine()
 		if err != nil {
+			logs.Error("read user input failed", "err", err)
 			fmt.Println(err)
 			os.Exit(consts.ExitInputError)
 		}
@@ -78,6 +86,7 @@ func main() {
 		if query == "" {
 			continue
 		} else if query == "/exit" {
+			logs.Info("user requested exit")
 			fmt.Println("Bye!")
 			break
 		}

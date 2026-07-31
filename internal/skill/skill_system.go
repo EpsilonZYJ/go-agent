@@ -7,11 +7,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"go-agent/internal/logs"
 )
 
 func ScanSkills(skillDir string) {
 	entries, err := os.ReadDir(skillDir)
 	if err != nil {
+		logs.Warn("skills directory not found", "dir", skillDir, "err", err)
 		return
 	}
 	for _, entry := range entries {
@@ -21,6 +24,7 @@ func ScanSkills(skillDir string) {
 		path := filepath.Join(skillDir, entry.Name(), "SKILL.md")
 		raw, err := os.ReadFile(path)
 		if err != nil {
+			logs.Warn("skill file read failed", "path", path, "err", err)
 			continue
 		}
 		content := string(raw)
@@ -39,7 +43,9 @@ func ScanSkills(skillDir string) {
 			Description: desc,
 			Content:     content,
 		}
+		logs.Info("skill loaded", "name", name)
 	}
+	logs.Info("skills scan complete", "count", len(skillRegistry))
 }
 
 func ListSkills() string {
@@ -58,6 +64,7 @@ func ListSkills() string {
 func GetSkill(name string) (string, error) {
 	skillToFind, ok := skillRegistry[name]
 	if !ok {
+		logs.Warn("skill not found", "name", name)
 		return "", fmt.Errorf("Skill not found: %s", name)
 	}
 	return skillToFind.Content, nil

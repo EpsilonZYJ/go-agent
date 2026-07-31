@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+
+	"go-agent/internal/logs"
 )
 
 type Executor func(input json.RawMessage) (string, error)
@@ -26,6 +28,7 @@ func Dispatch(name string, input json.RawMessage) (string, error) {
 	executor, ok := execMap[name]
 	execMu.RUnlock()
 	if !ok {
+		logs.Warn("unknown tool dispatched", "tool", name)
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
 	return executor(input)
@@ -36,6 +39,7 @@ func Wrap[T any](fn func(T) (string, error)) Executor {
 		var args T
 		if len(input) > 0 {
 			if err := json.Unmarshal(input, &args); err != nil {
+				logs.Warn("tool input unmarshal failed", "input", string(input), "err", err)
 				return "", fmt.Errorf("invalid tool input: %s", string(input))
 			}
 		}

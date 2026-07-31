@@ -4,10 +4,12 @@ package permission
 
 import (
 	"fmt"
-	"go-agent/internal/consts"
-	"go-agent/internal/session"
 	"os"
 	"strings"
+
+	"go-agent/internal/consts"
+	"go-agent/internal/logs"
+	"go-agent/internal/session"
 )
 
 func askUser(tool_name string, args map[string]any, reason string) consts.PermissionCode {
@@ -21,9 +23,11 @@ func askUser(tool_name string, args map[string]any, reason string) consts.Permis
 	var tries int = 0
 	choice, err := session.ReadLine()
 	for err != nil {
+		logs.Warn("user input read error during ask", "trial", tries, "err", err)
 		fmt.Println(err)
 		tries++
 		if tries >= consts.IOMaxTries {
+			logs.Error("max read tries exceeded during ask", "tries", tries)
 			os.Exit(consts.ExitIOMaxTriesError)
 		}
 	}

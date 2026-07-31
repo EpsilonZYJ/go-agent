@@ -59,12 +59,10 @@ func CollectLLMOutput(respContent []anthropic.ContentBlockUnion) (
 			}
 			index++
 		}
-		logs.Debug(
-			"[AgentLoop] ",
-			"block=", blockidx,
-			"type=", b.Type,
-			"raw=", b.RawJSON(),
-			"\n", "",
+		logs.Debug("block processed",
+			"block", blockidx,
+			"type", b.Type,
+			"raw", b.RawJSON(),
 		)
 	}
 

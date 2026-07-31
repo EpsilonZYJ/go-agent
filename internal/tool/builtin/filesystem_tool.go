@@ -4,14 +4,16 @@ package builtin
 
 import (
 	"fmt"
-	"go-agent/internal/config"
-	"go-agent/internal/consts"
-	"go-agent/internal/llm"
-	"go-agent/internal/tool"
-	"go-agent/internal/tool/files"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"go-agent/internal/config"
+	"go-agent/internal/consts"
+	"go-agent/internal/llm"
+	"go-agent/internal/logs"
+	"go-agent/internal/tool"
+	"go-agent/internal/tool/files"
 )
 
 type globInput struct {
@@ -37,11 +39,13 @@ type editInput struct {
 func RunRead(path string, limit int) (string, error) {
 	path, err := files.SafePath(path)
 	if err != nil {
+		logs.Warn("read_file path is unsafe", "path", path, "err", err)
 		return "", fmt.Errorf("error: %v", err)
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
+		logs.Warn("read_file failed", "path", path, "err", err)
 		return "", fmt.Errorf("error: %v", err)
 	}
 
@@ -53,49 +57,59 @@ func RunRead(path string, limit int) (string, error) {
 			fmt.Sprintf("... (%d more lines)", len(lines)-limit),
 		)
 	}
+	logs.Info("file read", "path", path, "bytes", len(data))
 	return strings.Join(lines, "\n"), nil
 }
 
 func RunWrite(path string, content string) (string, error) {
 	path, err := files.SafePath(path)
 	if err != nil {
+		logs.Warn("write_file path is unsafe", "path", path, "err", err)
 		return "", fmt.Errorf("error: %v", err)
 	}
 
 	parent := filepath.Dir(path)
 	err = os.MkdirAll(parent, 0755)
 	if err != nil {
+		logs.Warn("write_file mkdir failed", "path", path, "err", err)
 		return "", fmt.Errorf("error: %v", err)
 	}
 
 	err = os.WriteFile(path, []byte(content), 0644)
 	if err != nil {
+		logs.Warn("write_file failed", "path", path, "err", err)
 		return "", fmt.Errorf("error: %v", err)
 	}
+	logs.Info("file written", "path", path, "bytes", len(content))
 	return fmt.Sprintf("Wrote %d bytes to %s", len(content), path), nil
 }
 
 func RunEdit(path string, oldtxt string, newtxt string) (string, error) {
 	path, err := files.SafePath(path)
 	if err != nil {
+		logs.Warn("edit_file path is unsafe", "path", path, "err", err)
 		return "", fmt.Errorf("error: %v", err)
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
+		logs.Warn("edit_file read failed", "path", path, "err", err)
 		return "", fmt.Errorf("error: %v", err)
 	}
 
 	text := string(data)
 	if !strings.Contains(text, oldtxt) {
+		logs.Warn("edit_file text not found", "path", path)
 		return "", fmt.Errorf("error: text not found in %s", path)
 	}
 	newContent := strings.Replace(text, oldtxt, newtxt, 1)
 
 	err = os.WriteFile(path, []byte(newContent), 0644)
 	if err != nil {
+		logs.Warn("edit_file write failed", "path", path, "err", err)
 		return "", fmt.Errorf("error: %v", err)
 	}
+	logs.Info("file edited", "path", path)
 	return fmt.Sprintf("Edited: %s", path), nil
 }
 
@@ -103,6 +117,7 @@ func RunGlob(pattern string) (string, error) {
 	workdir := config.SysCfg.CurDir
 	matches, err := filepath.Glob(filepath.Join(workdir, pattern))
 	if err != nil {
+		logs.Warn("glob failed", "pattern", pattern, "err", err)
 		return "", fmt.Errorf("error: %v", err)
 	}
 	results := make([]string, 0, len(matches))
@@ -115,6 +130,7 @@ func RunGlob(pattern string) (string, error) {
 	if len(results) == 0 {
 		return "(no matches)", nil
 	}
+	logs.Debug("glob matched", "pattern", pattern, "count", len(results))
 	return strings.Join(results, "\n"), nil
 }
 

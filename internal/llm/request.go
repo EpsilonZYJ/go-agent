@@ -4,6 +4,8 @@ package llm
 
 import (
 	"fmt"
+
+	"go-agent/internal/logs"
 	"go-agent/internal/model"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -46,6 +48,7 @@ func (req *ChatRequest) AddMessages(message []model.Message) error {
 				anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Content)),
 			)
 		default:
+			logs.Warn("unknown message role", "role", msg.Role)
 			return fmt.Errorf("unknown role %s", msg.Role)
 		}
 	}

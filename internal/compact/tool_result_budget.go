@@ -20,13 +20,15 @@ func persistLargeOutput(toolUseID string, output string) string {
 	}
 	err := os.MkdirAll(config.SysCfg.ToolResultDir, 0755)
 	if err != nil {
-		logs.Error("persistLargeOutput: MkdirAll error - %s", err.Error())
+		logs.Error("tool result dir mkdir failed", "dir", config.SysCfg.ToolResultDir, "err", err)
 	}
 	path := filepath.Join(config.SysCfg.ToolResultDir, toolUseID+".txt")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err := os.WriteFile(path, []byte(output), 0644)
 		if err != nil {
-			logs.Error("persistLargeOutput: WriteFile error - %s", err.Error())
+			logs.Error("persisted output write failed", "path", path, "err", err)
+		} else {
+			logs.Info("tool output persisted to disk", "path", path, "bytes", len(output))
 		}
 	}
 	preview := output
@@ -67,6 +69,7 @@ func ToolResultBudget(msgs []anthropic.MessageParam) []anthropic.MessageParam {
 	if total <= consts.ToolResultsMaxBytes {
 		return msgs
 	}
+	logs.Info("tool result budget compact triggered", "totalBytes", total, "limit", consts.ToolResultsMaxBytes)
 	ranked := slices.Clone(blocks)
 	sort.Slice(ranked, func(i, j int) bool {
 		return toolResultTextBytes(ranked[i].Block.OfToolResult) >

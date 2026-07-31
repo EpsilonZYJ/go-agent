@@ -10,6 +10,7 @@ import (
 
 	"go-agent/internal/consts"
 	"go-agent/internal/hooks"
+	"go-agent/internal/logs"
 	"go-agent/internal/model"
 	"go-agent/internal/tool"
 	"go-agent/internal/tool/permission"
@@ -46,6 +47,7 @@ func batchExecution(
 			result.Name = fmt.Sprintf("\033[33m>>> %s\033[0m\n", block.Name)
 			output, err := tool.Dispatch(block.Name, block.Input)
 			if err != nil {
+				logs.Warn("tool dispatch failed", "tool", block.Name, "err", err)
 				(*pRespToolExecutionResults)[idx] = anthropic.NewToolResultBlock(block.ID, err.Error(), true)
 				result.Result = fmt.Sprintf("\033[31mError: %s\033[0m\n", err.Error())
 			} else {
@@ -103,6 +105,7 @@ func toolExecutionWithoutAsk(
 func runTool(block anthropic.ContentBlockUnion) anthropic.ContentBlockParamUnion {
 	output, err := tool.Dispatch(block.Name, block.Input)
 	if err != nil {
+		logs.Warn("tool dispatch failed", "tool", block.Name, "err", err)
 		fmt.Printf("\033[31mError: %s\033[0m\n", err.Error())
 		return anthropic.NewToolResultBlock(block.ID, err.Error(), true)
 	}
@@ -161,8 +164,10 @@ func ToolExecution(
 				printMu.Lock()
 				decision := permission.AskUser(toolUse, askReasonMap[idx])
 				if decision == consts.PermissionDeny {
+					logs.Info("user denied tool execution", "tool", toolUse.Name)
 					respToolExecutionResults[idx] = anthropic.NewToolResultBlock(toolUse.ID, "Permission denied.", true)
 				} else {
+					logs.Info("user allowed tool execution", "tool", toolUse.Name)
 					respToolExecutionResults[idx] = runTool(toolUse)
 				}
 				printMu.Unlock()

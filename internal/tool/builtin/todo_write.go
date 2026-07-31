@@ -10,6 +10,7 @@ import (
 
 	"go-agent/internal/consts"
 	"go-agent/internal/llm"
+	"go-agent/internal/logs"
 	"go-agent/internal/tool"
 )
 
@@ -123,6 +124,7 @@ func normalizeTodos(todos any) ([]Todo, error) {
 func RunTodoWrite(todos any) (string, error) {
 	normalizedTodos, err := normalizeTodos(todos)
 	if err != nil {
+		logs.Warn("todo_write parse failed", "err", err)
 		return "", err
 	}
 
@@ -142,6 +144,7 @@ func RunTodoWrite(todos any) (string, error) {
 		lines = append(lines, fmt.Sprintf("  [%s] %s", icon, t.Content))
 	}
 	fmt.Printf("%s\n", strings.Join(lines, "\n"))
+	logs.Info("todos updated", "count", len(currentTodos))
 	return fmt.Sprintf("Updated %d tasks", len(currentTodos)), nil
 }
 

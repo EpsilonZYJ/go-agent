@@ -24,12 +24,17 @@ func executeCommand(command string) (string, error) {
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 	output, err := cmd.CombinedOutput()
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		logs.Debug("[executeCommand] bash timeout.")
+		logs.Debug("bash timeout",
+			"command", command,
+			"timeout", consts.BashTimeout,
+		)
 		return "", fmt.Errorf("bash timed out after %s", consts.BashTimeout)
 	}
 	if err != nil {
+		logs.Warn("bash command failed", "command", command, "err", err)
 		return "", err
 	}
+	logs.Debug("bash command succeeded", "command", command, "outputLen", len(output))
 	return strings.TrimSpace(string(output)), nil
 }
 

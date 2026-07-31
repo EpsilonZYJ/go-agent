@@ -6,6 +6,8 @@ import (
 	"bufio"
 	"os"
 	"sync"
+
+	"go-agent/internal/logs"
 )
 
 var (
@@ -17,5 +19,8 @@ func ReadLine() (string, error) {
 	termMu.Lock()
 	defer termMu.Unlock()
 	termScanner.Scan()
+	if err := termScanner.Err(); err != nil {
+		logs.Warn("terminal input scan error", "err", err)
+	}
 	return termScanner.Text(), termScanner.Err()
 }

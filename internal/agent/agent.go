@@ -47,11 +47,13 @@ func IncreaseRoundSinceTodoByOne() {
 
 func AgentLoop(request *llm.ChatRequest) {
 	var trials int = 0
-	for {
+	startTime := time.Now()
+	for loop := 0; ; loop++ {
 		// 添加todo reminder
 		if GetRoundSinceTodo() >= consts.TodoReminderRounds && len(request.Messages) != 0 {
 			request.AddUserContent("<reminder>Update your todos.</reminder>")
 			RoundSinceTodoSetZero()
+			logs.Debug("todo reminder injected")
 		}
 
 		// 创建请求
@@ -68,19 +70,37 @@ func AgentLoop(request *llm.ChatRequest) {
 		)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				logs.Debug("[AgentLoop] Request timeout.")
+				logs.Debug("request timeout",
+					"loop", loop,
+					"trial", trials,
+				)
 			}
 			errCode := errs.AnthropicRequestErrorCode(err)
 			if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
+				logs.Error("non-retryable API error",
+					"loop", loop,
+					"errCode", errCode,
+					"err", err,
+				)
 				fmt.Printf("An error occurred: %v\n", err)
 				cancel()
 				return
 			} else if trials >= consts.MaxRequestTries {
+				logs.Error("max request tries exceeded",
+					"loop", loop,
+					"trials", trials,
+					"err", err,
+				)
 				fmt.Printf("Max Request Tries: %d\n", trials)
 				cancel()
 				return
 			}
 			trials++
+			logs.Warn("retrying request",
+				"loop", loop,
+				"trial", trials,
+				"err", err,
+			)
 			time.Sleep(time.Duration(trials) * consts.RetryDelay)
 			cancel()
 			fmt.Printf("Error: %v\n", err)
@@ -91,6 +111,12 @@ func AgentLoop(request *llm.ChatRequest) {
 		trials = 0
 		request.Messages = append(request.Messages, resp.ToParam())
 
+		logs.Debug("response received",
+			"loop", loop,
+			"stopReason", resp.StopReason,
+			"contentBlocks", len(resp.Content),
+		)
+
 		// 收集输出和工具调用
 		var toolUses []anthropic.ContentBlockUnion
 		var textOuts []strings.Builder
@@ -100,15 +126,27 @@ func AgentLoop(request *llm.ChatRequest) {
 		utils.PrintAgentOutput(textOuts)
 		// 无工具调用，本轮结束
 		if resp.StopReason != anthropic.StopReasonToolUse || len(toolUses) == 0 {
+			logs.Info("agent turn finished",
+				"loops", loop+1,
+				"duration", time.Since(startTime),
+			)
 			hooks.TriggerStop(request.Messages)
 			return
 		}
 
+		logs.Info("executing tools",
+			"loop", loop,
+			"toolCount", len(toolUses),
+			"allowCount", len(allowIndex),
+			"denyCount", len(denyIndex),
+			"askCount", len(askIndex),
+		)
 		results := execute.ToolExecution(toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap)
 		// 本轮若调用了 todo_write（无论 allow/ask 路径），重置提醒计数
 		for _, tu := range toolUses {
 			if tu.Name == consts.ToolTodoWrite {
 				RoundSinceTodoSetZero()
+				logs.Debug("todo_write detected, resetting round counter")
 				break
 			}
 		}

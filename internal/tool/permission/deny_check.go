@@ -5,6 +5,8 @@ package permission
 import (
 	"fmt"
 	"strings"
+
+	"go-agent/internal/logs"
 )
 
 var denyList = []string{
@@ -14,6 +16,7 @@ var denyList = []string{
 func check_deny_list(command string) error {
 	for _, pattern := range denyList {
 		if strings.Contains(command, pattern) {
+			logs.Warn("deny list matched", "command", command, "pattern", pattern)
 			return fmt.Errorf("Blocked: %s", pattern)
 		}
 	}

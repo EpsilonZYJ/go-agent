@@ -4,6 +4,7 @@ package compact
 
 import (
 	"go-agent/internal/consts"
+	"go-agent/internal/logs"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -35,6 +36,7 @@ func MicroCompact(msgs []anthropic.MessageParam) []anthropic.MessageParam {
 	if len(toolResults) <= consts.KeepRecent {
 		return msgs
 	}
+	compacted := 0
 	for _, r := range toolResults[:len(toolResults)-consts.KeepRecent] {
 		tr := r.Block.OfToolResult
 		if toolResultTextLen(tr) > consts.ToolResultMaxLen {
@@ -45,7 +47,9 @@ func MicroCompact(msgs []anthropic.MessageParam) []anthropic.MessageParam {
 					},
 				},
 			}
+			compacted++
 		}
 	}
+	logs.Debug("micro compact applied", "total", len(toolResults), "compacted", compacted, "kept", consts.KeepRecent)
 	return msgs
 }

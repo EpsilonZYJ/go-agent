@@ -4,8 +4,10 @@ package compact
 
 import (
 	"fmt"
-	"go-agent/internal/consts"
 	"slices"
+
+	"go-agent/internal/consts"
+	"go-agent/internal/logs"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -34,6 +36,7 @@ func SnipCompact(msgs []anthropic.MessageParam) []anthropic.MessageParam {
 		return msgs
 	}
 	snipped := tailStart - headEnd
+	logs.Info("snip compact applied", "original", len(msgs), "snipped", snipped, "remaining", len(msgs)-snipped+1)
 	return slices.Concat(
 		msgs[:headEnd],
 		[]anthropic.MessageParam{
