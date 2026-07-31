@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go-agent/internal/compact"
 	"go-agent/internal/utils"
 	"net/http"
 	"strings"
@@ -46,9 +47,21 @@ func IncreaseRoundSinceTodoByOne() {
 }
 
 func AgentLoop(request *llm.ChatRequest) {
-	var trials int = 0
+	var networkTrials int = 0  // 网络重试次数
+	var reactiveTrials int = 0 // 压缩重试次数
+
 	startTime := time.Now()
 	for loop := 0; ; loop++ {
+
+		request.Messages = compact.ToolResultBudget(request.Messages) // L3: persist large results
+		request.Messages = compact.SnipCompact(request.Messages)      // L1: trim middle
+		request.Messages = compact.MicroCompact(request.Messages)     // L2: old result placeholders
+
+		if compact.EstimateMessagesSize(request) > consts.ContextLimit {
+			fmt.Printf("[auto compact]\n")
+			request.Messages = compact.CompactHistory(request.Messages)
+		}
+
 		// 添加todo reminder
 		if GetRoundSinceTodo() >= consts.TodoReminderRounds && len(request.Messages) != 0 {
 			request.AddUserContent("<reminder>Update your todos.</reminder>")
@@ -72,8 +85,20 @@ func AgentLoop(request *llm.ChatRequest) {
 			if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				logs.Debug("request timeout",
 					"loop", loop,
-					"trial", trials,
+					"trial", networkTrials,
 				)
+			} else if errs.IsPromptTooLong(err) {
+				if reactiveTrials < consts.MaxReactiveTrials {
+					fmt.Printf("[reactive compact]\n")
+					logs.Debug("prompt too long")
+					request.Messages = compact.ReactiveCompact(request.Messages)
+					reactiveTrials++
+					continue
+				} else {
+					logs.Debug("reactive compact hit max limit")
+					cancel()
+					return
+				}
 			}
 			errCode := errs.AnthropicRequestErrorCode(err)
 			if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
@@ -85,30 +110,31 @@ func AgentLoop(request *llm.ChatRequest) {
 				fmt.Printf("An error occurred: %v\n", err)
 				cancel()
 				return
-			} else if trials >= consts.MaxRequestTries {
+			} else if networkTrials >= consts.MaxRequestTries {
 				logs.Error("max request tries exceeded",
 					"loop", loop,
-					"trials", trials,
+					"trials", networkTrials,
 					"err", err,
 				)
-				fmt.Printf("Max Request Tries: %d\n", trials)
+				fmt.Printf("Max Request Tries: %d\n", networkTrials)
 				cancel()
 				return
 			}
-			trials++
+			networkTrials++
 			logs.Warn("retrying request",
 				"loop", loop,
-				"trial", trials,
+				"trial", networkTrials,
 				"err", err,
 			)
-			time.Sleep(time.Duration(trials) * consts.RetryDelay)
+			time.Sleep(time.Duration(networkTrials) * consts.RetryDelay)
 			cancel()
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
 		cancel()
 
-		trials = 0
+		networkTrials = 0
+		reactiveTrials = 0
 		request.Messages = append(request.Messages, resp.ToParam())
 
 		logs.Debug("response received",

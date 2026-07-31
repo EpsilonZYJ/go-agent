@@ -2,6 +2,9 @@
 
 package consts
 
+// MaxReactiveTrials Reactive compact最大重试次数
+const MaxReactiveTrials = 1
+
 const ContextLimit int = 50000
 
 // KeepRecent 保留的最近的旧工具结果占位
