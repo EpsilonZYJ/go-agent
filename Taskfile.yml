@@ -51,3 +51,27 @@ tasks:
     desc: Remove build artifacts
     cmds:
       - rm -rf build
+
+  build-cross:
+    desc: Cross-compile for a given platform (usage - task build-cross GOOS=linux GOARCH=amd64)
+    vars:
+      GOOS: '{{.GOOS | default "linux"}}'
+      GOARCH: '{{.GOARCH | default "amd64"}}'
+      EXT: '{{if eq .GOOS "windows"}}.exe{{end}}'
+      OUT: 'build/go-agent-{{.GOOS}}-{{.GOARCH}}{{.EXT}}'
+    cmds:
+      - env GOOS={{.GOOS}} GOARCH={{.GOARCH}} CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o {{.OUT}} .
+
+  build-all:
+    desc: Cross-compile for all supported platforms
+    cmds:
+      - |
+        for os in linux darwin windows; do
+          for arch in amd64 arm64; do
+            ext=""
+            [ "$os" = "windows" ] && ext=".exe"
+            echo "-> building $os/$arch"
+            GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" \
+              -o "build/go-agent-${os}-${arch}${ext}" .
+          done
+        done
