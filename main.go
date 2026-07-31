@@ -43,6 +43,7 @@ func InitAgent() error {
 	}
 	config.SysCfg.SkillsDir = filepath.Join(config.SysCfg.CurDir, "skills")
 	config.SysCfg.ToolResultDir = filepath.Join(config.SysCfg.CurDir, ".task_outputs", "tool-results")
+	config.SysCfg.TranscriptDir = filepath.Join(config.SysCfg.CurDir, ".transcripts")
 	logs.Info("working directory", "dir", config.SysCfg.CurDir)
 
 	skill.ScanSkills(config.SysCfg.SkillsDir)

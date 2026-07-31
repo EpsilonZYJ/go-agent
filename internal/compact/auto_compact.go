@@ -1,0 +1,128 @@
+package compact
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"go-agent/internal/config"
+	"go-agent/internal/consts"
+	"go-agent/internal/errs"
+	"go-agent/internal/llm"
+	"go-agent/internal/logs"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/anthropics/anthropic-sdk-go"
+)
+
+func writeTranscript(msgs []anthropic.MessageParam) string {
+	if err := os.MkdirAll(config.SysCfg.TranscriptDir, 0755); err != nil {
+		logs.Error("llm summary dir mkdir failed", "dir", config.SysCfg.TranscriptDir, "error", err)
+	}
+	path := filepath.Join(config.SysCfg.TranscriptDir, fmt.Sprintf("transcript_%d.jsonl", time.Now().Unix()))
+	var b strings.Builder
+	for _, msg := range msgs {
+		line, _ := json.Marshal(msg)
+		b.Write(line)
+		b.WriteByte('\n')
+	}
+	err := os.WriteFile(path, []byte(b.String()), 0644)
+	if err != nil {
+		logs.Error("write transcript failed", "error", err)
+	}
+	return path
+}
+
+func summarizeHistory(msgs []anthropic.MessageParam) string {
+	conversation, err := json.Marshal(msgs)
+	if err != nil {
+		logs.Error("json marshal failed", "error", err)
+	}
+	content := string([]rune(string(conversation))[:min(consts.SummarizeHistoryMaxChars, len([]rune(string(conversation))))])
+	prompt := "Summarize this coding-agent conversation so work can continue.\n" +
+		"Preserve: 1. current goal, 2. key findings/decisions, 3. files read/changed, " +
+		"4. remaining work, 5. user constraints.\nBe compact but concrete.\n\n" + content
+
+	ctx, cancel := context.WithTimeout(context.Background(), consts.RequestTimeout)
+	resp, err := llm.Client.Messages.New(
+		ctx,
+		anthropic.MessageNewParams{
+			Messages: []anthropic.MessageParam{
+				anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
+			},
+			Model:     config.ModelCfg.Model,
+			MaxTokens: config.ModelCfg.MaxTokens,
+		},
+	)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			logs.Debug("request timeout", "error", err)
+		}
+		errCode := errs.AnthropicRequestErrorCode(err)
+		if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
+			logs.Error("non-retryable API error",
+				"err", err,
+			)
+			fmt.Printf("An error occurred: %v\n", err)
+			cancel()
+			return "(empty summary)"
+		}
+		cancel()
+		fmt.Printf("Error: %v\n", err)
+	}
+	cancel()
+
+	rawSummary := resp.Content
+	var summary string = ""
+	for _, block := range rawSummary {
+		if block.Type == consts.Text {
+			summary = summary + block.Text
+		}
+	}
+	summary = strings.TrimSpace(summary)
+	if summary == "" {
+		return "(empty summary)"
+	}
+	return summary
+}
+
+// CompactHistory LLM 进行总结压缩
+func CompactHistory(msgs []anthropic.MessageParam) []anthropic.MessageParam {
+	transcriptPath := writeTranscript(msgs)
+	logs.Info("transcript saved:", "path", transcriptPath)
+	fmt.Printf("[transcript saved: %s]\n", transcriptPath)
+	summary := summarizeHistory(msgs)
+	return []anthropic.MessageParam{
+		anthropic.NewUserMessage(
+			anthropic.NewTextBlock(
+				fmt.Sprintf("[Compacted]\n\n%s", summary),
+			),
+		),
+	}
+}
+
+// ReactiveCompact API 出错时进行压缩
+func ReactiveCompact(msgs []anthropic.MessageParam) []anthropic.MessageParam {
+	transcriptPath := writeTranscript(msgs)
+	logs.Info("transcript saved:", "path", transcriptPath)
+	fmt.Printf("[transcript saved: %s]\n", transcriptPath)
+	summary := summarizeHistory(msgs)
+	tailStart := max(0, len(msgs)-5)
+	if (tailStart > 0 && tailStart < len(msgs)) &&
+		isToolResultMessage(msgs[tailStart]) &&
+		messageHasToolUse(msgs[tailStart-1]) {
+		tailStart--
+	}
+	head := []anthropic.MessageParam{
+		anthropic.NewUserMessage(
+			anthropic.NewTextBlock(
+				fmt.Sprintf("[Reactive compact]\n\n%s", summary),
+			),
+		),
+	}
+	return append(head, msgs[tailStart:]...)
+}

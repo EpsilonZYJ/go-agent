@@ -21,3 +21,6 @@ const ToolResultMaxLen int = 120
 
 // ToolResultPreview 过大的工具执行结果预览最大长度
 const ToolResultPreview = 2000
+
+// SummarizeHistoryMaxChars 历史对话总结历史记录最大字数
+const SummarizeHistoryMaxChars = 80000

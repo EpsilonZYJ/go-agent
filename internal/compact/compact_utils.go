@@ -3,6 +3,7 @@
 package compact
 
 import (
+	"encoding/json"
 	"go-agent/internal/llm"
 	"strings"
 	"unicode/utf8"
@@ -10,12 +11,12 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 )
 
-func estimateMessagesSize(req *llm.ChatRequest) int {
-	return len(req.Messages)
-}
-
-func blockType() {
-
+func EstimateMessagesSize(req *llm.ChatRequest) int {
+	b, err := json.Marshal(req.Messages)
+	if err != nil {
+		return 0
+	}
+	return len([]rune(string(b)))
 }
 
 func messageHasToolUse(msg anthropic.MessageParam) bool {

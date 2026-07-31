@@ -10,6 +10,7 @@ type SystemConfig struct {
 	CurDir          string `json:"cur_dir"`
 	SkillsDir       string `json:"skills_dir"`
 	ToolResultDir   string `json:"tool_result_dir"`
+	TranscriptDir   string `json:"transcript_dir"`
 }
 
 type ModelConfig struct {

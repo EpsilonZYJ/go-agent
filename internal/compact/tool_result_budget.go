@@ -33,7 +33,7 @@ func persistLargeOutput(toolUseID string, output string) string {
 	}
 	preview := output
 	if len(preview) > consts.ToolResultPreview {
-		preview = preview[:consts.ToolResultPreview]
+		preview = string([]rune(preview)[:consts.ToolResultPreview])
 	}
 	return fmt.Sprintf("<persisted-output>\nFull output: %s\nPreview:\n%s\n</persisted-output>", path, preview)
 
