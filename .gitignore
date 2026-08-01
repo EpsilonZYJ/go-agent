@@ -9,3 +9,4 @@ go-agent
 .transcripts/
 .task_outputs/
 compact_demo/
+.gocode/

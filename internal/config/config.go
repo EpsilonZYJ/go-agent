@@ -2,6 +2,8 @@
 
 package config
 
+import "path/filepath"
+
 type SystemConfig struct {
 	Url             string `json:"url"`
 	ApiKey          string `json:"api_key"`
@@ -20,3 +22,11 @@ type ModelConfig struct {
 
 var SysCfg SystemConfig
 var ModelCfg ModelConfig
+
+func (cfg *SystemConfig) SetWorkDir(workdir string) {
+	cfg.CurDir = workdir
+	path := filepath.Join(workdir, ".gocode")
+	cfg.SkillsDir = filepath.Join(cfg.CurDir, "skills")
+	cfg.ToolResultDir = filepath.Join(path, ".task_outputs", "tool-results")
+	cfg.TranscriptDir = filepath.Join(path, ".transcripts")
+}

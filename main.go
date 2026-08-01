@@ -5,7 +5,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"go-agent/internal/agent"
@@ -36,14 +35,14 @@ func InitAgent() error {
 	logs.Info("agent initializing", "model", config.ModelCfg.Model, "url", config.SysCfg.Url)
 
 	// 当前项目系统设置
-	config.SysCfg.CurDir, err = os.Getwd()
+	curdir, err := os.Getwd()
 	if err != nil {
 		logs.Warn("get working directory failed", "err", err)
 		return fmt.Errorf("get current directory failed: %v", err)
 	}
-	config.SysCfg.SkillsDir = filepath.Join(config.SysCfg.CurDir, "skills")
-	config.SysCfg.ToolResultDir = filepath.Join(config.SysCfg.CurDir, ".task_outputs", "tool-results")
-	config.SysCfg.TranscriptDir = filepath.Join(config.SysCfg.CurDir, ".transcripts")
+
+	config.SysCfg.SetWorkDir(curdir)
+
 	logs.Info("working directory", "dir", config.SysCfg.CurDir)
 
 	skill.ScanSkills(config.SysCfg.SkillsDir)
