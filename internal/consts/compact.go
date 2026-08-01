@@ -27,3 +27,6 @@ const ToolResultPreview = 2000
 
 // SummarizeHistoryMaxChars 历史对话总结历史记录最大字数
 const SummarizeHistoryMaxChars = 80000
+
+// CompactKeepTail CompactHistory 原样保留的最近消息条数。
+const CompactKeepTail = 5
