@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// PrintAgentOutput prints each non-empty agent output to stdout, prefixed
+// with a green "Agent:" label, followed by a trailing blank line.
 func PrintAgentOutput(textOuts []strings.Builder) {
 	for _, textOut := range textOuts {
 		if textOut.Len() > 0 {
