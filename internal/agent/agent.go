@@ -169,15 +169,15 @@ func AgentLoop(request *llm.ChatRequest) {
 			return
 		}
 
-		if _, ok := compactToolUseID(toolUses); ok {
+		if compactID, ok := compactToolUseID(toolUses); ok {
 			fmt.Printf("[compact]\n")
 			logs.Info("compact tool invoked, compacting history")
-			// CompactHistory replaces the entire conversation with a single
-			// summary user message, so the compact tool_use block no longer
-			// exists. Appending a tool_result for it would be an orphaned
-			// tool_result (no matching tool_use) and would fail the next
-			// API call, so we do not append one here.
-			request.Messages = compact.CompactHistory(request.Messages)
+			last := request.Messages[len(request.Messages)-1]
+			head := compact.CompactHistory(request.Messages[:len(request.Messages)-1])
+			request.Messages = append(head, last)
+			request.Messages = append(request.Messages, anthropic.NewUserMessage(
+				anthropic.NewToolResultBlock(compactID, "[Compacted. Conversation history has been summarized.]", false),
+			))
 			continue
 		}
 

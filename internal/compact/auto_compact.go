@@ -45,7 +45,7 @@ func summarizeHistory(msgs []anthropic.MessageParam) string {
 	content := string([]rune(string(conversation))[:min(consts.SummarizeHistoryMaxChars, len([]rune(string(conversation))))])
 	prompt := "Summarize this coding-agent conversation so work can continue.\n" +
 		"Preserve: 1. current goal, 2. key findings/decisions, 3. files read/changed, " +
-		"4. remaining work, 5. user constraints.\nBe compact but concrete.\n\n" + content
+		"4. remaining work, 5. user constraints, 6. language you are using.\nBe compact but concrete.\n\n" + content
 
 	ctx, cancel := context.WithTimeout(context.Background(), consts.RequestTimeout)
 	resp, err := llm.Client.Messages.New(
