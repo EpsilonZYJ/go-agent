@@ -13,6 +13,7 @@ type SystemConfig struct {
 	SkillsDir       string `json:"skills_dir"`
 	ToolResultDir   string `json:"tool_result_dir"`
 	TranscriptDir   string `json:"transcript_dir"`
+	MemoryDir       string `json:"memory_dir"`
 }
 
 type ModelConfig struct {
@@ -29,4 +30,5 @@ func (cfg *SystemConfig) SetWorkDir(workdir string) {
 	cfg.SkillsDir = filepath.Join(cfg.CurDir, "skills")
 	cfg.ToolResultDir = filepath.Join(path, ".task_outputs", "tool-results")
 	cfg.TranscriptDir = filepath.Join(path, ".transcripts")
+	cfg.MemoryDir = filepath.Join(path, ".memory")
 }

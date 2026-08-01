@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
 
-package skill
+package utils
 
 import (
 	"strings"
@@ -8,7 +8,7 @@ import (
 	"go.yaml.in/yaml/v4"
 )
 
-func parseFrontmatter(text string) (map[string]string, string) {
+func ParseFrontmatter(text string) (map[string]string, string) {
 	if !strings.HasPrefix(text, "---") {
 		return map[string]string{}, text
 	}

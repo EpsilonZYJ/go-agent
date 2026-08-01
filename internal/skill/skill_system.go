@@ -4,6 +4,7 @@ package skill
 
 import (
 	"fmt"
+	"go-agent/internal/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,7 +29,7 @@ func ScanSkills(skillDir string) {
 			continue
 		}
 		content := string(raw)
-		metadata, body := parseFrontmatter(content)
+		metadata, body := utils.ParseFrontmatter(content)
 		name := metadata["name"]
 		if name == "" {
 			name = entry.Name()
