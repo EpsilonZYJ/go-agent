@@ -32,7 +32,7 @@ func RegisterBuiltinTools(req *llm.ChatRequest) error {
 		logs.Warn("register compact tool failed", "err", err)
 		return err
 	}
-	logs.Info("builtin tools registered", "count", 6)
+	logs.Info("builtin tools registered", "count", len(req.Tools))
 	return nil
 }
 
@@ -49,6 +49,6 @@ func SubAgentRegisterBuiltinTools(req *llm.ChatRequest) error {
 		logs.Warn("subagent register load_skill tool failed", "err", err)
 		return err
 	}
-	logs.Info("subagent builtin tools registered", "count", 3)
+	logs.Info("subagent builtin tools registered", "count", len(req.Tools))
 	return nil
 }
