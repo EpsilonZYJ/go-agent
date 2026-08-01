@@ -46,6 +46,15 @@ func IncreaseRoundSinceTodoByOne() {
 	roundSinceTodo++
 }
 
+func compactToolUseID(toolUses []anthropic.ContentBlockUnion) (string, bool) {
+	for _, tu := range toolUses {
+		if tu.Name == consts.ToolContextCompact {
+			return tu.ID, true
+		}
+	}
+	return "", false
+}
+
 func AgentLoop(request *llm.ChatRequest) {
 	var networkTrials int = 0  // 网络重试次数
 	var reactiveTrials int = 0 // 压缩重试次数
@@ -158,6 +167,18 @@ func AgentLoop(request *llm.ChatRequest) {
 			)
 			hooks.TriggerStop(request.Messages)
 			return
+		}
+
+		if _, ok := compactToolUseID(toolUses); ok {
+			fmt.Printf("[compact]\n")
+			logs.Info("compact tool invoked, compacting history")
+			// CompactHistory replaces the entire conversation with a single
+			// summary user message, so the compact tool_use block no longer
+			// exists. Appending a tool_result for it would be an orphaned
+			// tool_result (no matching tool_use) and would fail the next
+			// API call, so we do not append one here.
+			request.Messages = compact.CompactHistory(request.Messages)
+			continue
 		}
 
 		logs.Info("executing tools",

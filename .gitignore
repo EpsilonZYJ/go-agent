@@ -6,4 +6,6 @@ go-agent
 .env
 .task/
 .claude/
-
+.transcripts/
+.task_outputs/
+compact_demo/

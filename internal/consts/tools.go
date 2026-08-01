@@ -16,14 +16,15 @@ const (
 const LargeOutputChars = 100000
 
 const (
-	ToolBash      = "bash"
-	ToolReadFile  = "read_file"
-	ToolWriteFile = "write_file"
-	ToolEditFile  = "edit_file"
-	ToolGlob      = "glob"
-	ToolTodoWrite = "todo_write"
-	ToolSubagent  = "task"
-	ToolLoadSkill = "load_skill"
+	ToolBash           = "bash"
+	ToolReadFile       = "read_file"
+	ToolWriteFile      = "write_file"
+	ToolEditFile       = "edit_file"
+	ToolGlob           = "glob"
+	ToolTodoWrite      = "todo_write"
+	ToolSubagent       = "task"
+	ToolLoadSkill      = "load_skill"
+	ToolContextCompact = "compact"
 )
 
 const (

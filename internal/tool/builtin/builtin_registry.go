@@ -28,7 +28,11 @@ func RegisterBuiltinTools(req *llm.ChatRequest) error {
 		logs.Warn("register load_skill tool failed", "err", err)
 		return err
 	}
-	logs.Info("builtin tools registered", "count", 5)
+	if err := registerToolCompact(req); err != nil {
+		logs.Warn("register compact tool failed", "err", err)
+		return err
+	}
+	logs.Info("builtin tools registered", "count", 6)
 	return nil
 }
 

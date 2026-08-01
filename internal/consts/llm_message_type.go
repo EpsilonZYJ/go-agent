@@ -6,5 +6,4 @@ const (
 	ToolUse  string = "tool_use"
 	Text     string = "text"
 	Thinking string = "thinking"
-	Compact  string = "compact"
 )
