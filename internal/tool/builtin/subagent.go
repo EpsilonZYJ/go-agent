@@ -3,20 +3,15 @@
 package builtin
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"go-agent/internal/config"
 	"go-agent/internal/consts"
-	"go-agent/internal/errs"
 	"go-agent/internal/llm"
 	"go-agent/internal/logs"
 	"go-agent/internal/tool"
 	"go-agent/internal/tool/execute"
-	"net/http"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -45,12 +40,9 @@ func RunSubagent(description string) (string, error) {
 		return "", err
 	}
 	req.AddUserContent(description)
-	var trials int = 0
 
 	for loop := range consts.SubAgentSafetyLimit {
-		ctx, cancel := context.WithTimeout(context.Background(), consts.RequestTimeout)
-		resp, err := llm.Client.Messages.New(
-			ctx,
+		resp, rerr := llm.Call(
 			anthropic.MessageNewParams{
 				MaxTokens: req.MaxTokens,
 				Messages:  req.Messages,
@@ -58,46 +50,16 @@ func RunSubagent(description string) (string, error) {
 				System:    req.SystemPrompt,
 				Tools:     req.Tools,
 			},
+			consts.MaxRequestTries,
 		)
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				logs.Debug("subagent request timeout",
-					"loop", loop,
-					"trial", trials,
-				)
-			}
-			errCode := errs.AnthropicRequestErrorCode(err)
-			if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
-				logs.Warn("subagent non-retryable API error",
-					"loop", loop,
-					"errCode", errCode,
-					"err", err,
-				)
-				cancel()
-				return "", fmt.Errorf("An error occurred: %v\n", err)
-			} else if trials >= consts.MaxRequestTries {
-				logs.Warn("subagent max request tries exceeded",
-					"loop", loop,
-					"trials", trials,
-					"err", err,
-				)
-				cancel()
-				return "", fmt.Errorf("Max Request Tries: %d\n", trials)
-			}
-			trials++
-			logs.Warn("subagent retrying request",
+		if rerr != nil {
+			logs.Warn("subagent request failed",
 				"loop", loop,
-				"trial", trials,
-				"err", err,
+				"kind", rerr.Kind,
+				"err", rerr.Err,
 			)
-			time.Sleep(time.Duration(trials) * consts.RetryDelay)
-			cancel()
-			fmt.Printf("Error: %v\n", err)
-			continue
+			return "", fmt.Errorf("subagent request failed: %v", rerr.Err)
 		}
-		cancel()
-
-		trials = 0
 		req.Messages = append(req.Messages, resp.ToParam())
 
 		var toolUses []anthropic.ContentBlockUnion

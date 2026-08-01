@@ -1,16 +1,12 @@
 package compact
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"go-agent/internal/config"
 	"go-agent/internal/consts"
-	"go-agent/internal/errs"
 	"go-agent/internal/llm"
 	"go-agent/internal/logs"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,9 +48,7 @@ func summarizeHistory(msgs []anthropic.MessageParam) string {
 		"USER CONSTRAINTS: ...\n" +
 		"Be compact but concrete. NEVER invent a new goal; CURRENT GOAL must be the user's actual last request, not your inference.\n\n" + content
 
-	ctx, cancel := context.WithTimeout(context.Background(), consts.RequestTimeout)
-	resp, err := llm.Client.Messages.New(
-		ctx,
+	resp, rerr := llm.Call(
 		anthropic.MessageNewParams{
 			Messages: []anthropic.MessageParam{
 				anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
@@ -62,24 +56,12 @@ func summarizeHistory(msgs []anthropic.MessageParam) string {
 			Model:     config.ModelCfg.Model,
 			MaxTokens: config.ModelCfg.MaxTokens,
 		},
+		0, // 单次调用，不重试
 	)
-	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			logs.Debug("request timeout", "error", err)
-		}
-		errCode := errs.AnthropicRequestErrorCode(err)
-		if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
-			logs.Error("non-retryable API error",
-				"err", err,
-			)
-			fmt.Printf("An error occurred: %v\n", err)
-			cancel()
-			return "(empty summary)"
-		}
-		cancel()
-		fmt.Printf("Error: %v\n", err)
+	if rerr != nil {
+		logs.Error("summarize request failed", "kind", rerr.Kind, "err", rerr.Err)
+		return "(summarize failed, empty summary)"
 	}
-	cancel()
 
 	rawSummary := resp.Content
 	var summary string = ""

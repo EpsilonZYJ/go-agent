@@ -3,18 +3,14 @@
 package agent
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"go-agent/internal/compact"
 	"go-agent/internal/utils"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"go-agent/internal/consts"
-	"go-agent/internal/errs"
 	"go-agent/internal/hooks"
 	"go-agent/internal/llm"
 	"go-agent/internal/logs"
@@ -56,8 +52,7 @@ func compactToolUseID(toolUses []anthropic.ContentBlockUnion) (string, bool) {
 }
 
 func AgentLoop(request *llm.ChatRequest) {
-	var networkTrials int = 0  // 网络重试次数
-	var reactiveTrials int = 0 // 压缩重试次数
+	var reactiveTrials int = 0 // 压缩重试次数（网络重试已由 llm.Call 内部处理）
 
 	startTime := time.Now()
 	for loop := 0; ; loop++ {
@@ -78,10 +73,8 @@ func AgentLoop(request *llm.ChatRequest) {
 			logs.Debug("todo reminder injected")
 		}
 
-		// 创建请求
-		ctx, cancel := context.WithTimeout(context.Background(), consts.RequestTimeout)
-		resp, err := llm.Client.Messages.New(
-			ctx,
+		// 创建请求：瞬时错误由 llm.Call 内部退避重试
+		resp, rerr := llm.Call(
 			anthropic.MessageNewParams{
 				MaxTokens: request.MaxTokens,
 				Messages:  request.Messages,
@@ -89,61 +82,30 @@ func AgentLoop(request *llm.ChatRequest) {
 				System:    request.SystemPrompt,
 				Tools:     request.Tools,
 			},
+			consts.MaxRequestTries,
 		)
-		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				logs.Debug("request timeout",
-					"loop", loop,
-					"trial", networkTrials,
-				)
-			} else if errs.IsPromptTooLong(err) {
+		if rerr != nil {
+			if rerr.Kind == llm.PromptTooLongErr {
 				if reactiveTrials < consts.MaxReactiveTrials {
 					fmt.Printf("[reactive compact]\n")
 					logs.Debug("prompt too long")
 					request.Messages = compact.ReactiveCompact(request.Messages)
 					reactiveTrials++
 					continue
-				} else {
-					logs.Debug("reactive compact hit max limit")
-					cancel()
-					return
 				}
-			}
-			errCode := errs.AnthropicRequestErrorCode(err)
-			if errCode >= http.StatusBadRequest && errCode < http.StatusInternalServerError && errCode != http.StatusTooManyRequests {
-				logs.Error("non-retryable API error",
-					"loop", loop,
-					"errCode", errCode,
-					"err", err,
-				)
-				fmt.Printf("An error occurred: %v\n", err)
-				cancel()
-				return
-			} else if networkTrials >= consts.MaxRequestTries {
-				logs.Error("max request tries exceeded",
-					"loop", loop,
-					"trials", networkTrials,
-					"err", err,
-				)
-				fmt.Printf("Max Request Tries: %d\n", networkTrials)
-				cancel()
+				logs.Debug("reactive compact hit max limit")
 				return
 			}
-			networkTrials++
-			logs.Warn("retrying request",
+			logs.Error("request failed",
 				"loop", loop,
-				"trial", networkTrials,
-				"err", err,
+				"kind", rerr.Kind,
+				"err", rerr.Err,
 			)
-			time.Sleep(time.Duration(networkTrials) * consts.RetryDelay)
-			cancel()
-			fmt.Printf("Error: %v\n", err)
-			continue
+			fmt.Printf("An error occurred: %v\n", rerr.Err)
+			return
 		}
-		cancel()
 
-		networkTrials = 0
-		reactiveTrials = 0
+		reactiveTrials = 0 // 仅在成功后重置
 		request.Messages = append(request.Messages, resp.ToParam())
 
 		logs.Debug("response received",
