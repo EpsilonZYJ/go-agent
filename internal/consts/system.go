@@ -3,5 +3,5 @@
 package consts
 
 const (
-	MaxTokens = 10000
+	MaxTokens = 1000000
 )
