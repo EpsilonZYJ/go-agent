@@ -7,6 +7,7 @@ import (
 	"go-agent/internal/logs"
 )
 
+// RegisterBuiltinTools registers all built-in tools (bash, file system, todo_write, subagent, load_skill, compact).
 func RegisterBuiltinTools(req *llm.ChatRequest) error {
 	if err := registerToolBash(req); err != nil {
 		logs.Warn("register bash tool failed", "err", err)
@@ -36,6 +37,7 @@ func RegisterBuiltinTools(req *llm.ChatRequest) error {
 	return nil
 }
 
+// SubAgentRegisterBuiltinTools registers the built-in tools available to subagents (bash, file system, load_skill).
 func SubAgentRegisterBuiltinTools(req *llm.ChatRequest) error {
 	if err := registerToolBash(req); err != nil {
 		logs.Warn("subagent register bash tool failed", "err", err)

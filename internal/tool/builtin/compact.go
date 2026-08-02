@@ -15,6 +15,7 @@ type compactInput struct {
 	Focus string `json:"focus" jsonschema_description:"Optional hint for what the summary should focus on, such as the current task, decisions, or pending work. Leave empty for a general summary."`
 }
 
+// registerToolCompact registers the compact tool with the request.
 func registerToolCompact(req *llm.ChatRequest) error {
 	return tool.RegisterTool(
 		req, consts.ToolContextCompact,

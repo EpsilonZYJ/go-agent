@@ -18,6 +18,7 @@ type command struct {
 	Command string `json:"command" jsonschema:"required" jsonschema_description:"The shell command to execute."`
 }
 
+// executeCommand runs the given command in bash and returns its output with surrounding whitespace trimmed.
 func executeCommand(command string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), consts.BashTimeout)
 	defer cancel()
@@ -38,6 +39,7 @@ func executeCommand(command string) (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
+// RunBash runs the specified shell command in bash and returns its output; it returns an error on failure.
 func RunBash(command string) (string, error) {
 	output, err := executeCommand(command)
 	if err != nil {
@@ -46,6 +48,7 @@ func RunBash(command string) (string, error) {
 	return output, nil
 }
 
+// registerToolBash registers the bash tool with the request.
 func registerToolBash(req *llm.ChatRequest) error {
 	return tool.RegisterTool(req, consts.ToolBash, "Run a shell command", func(in command) (string, error) {
 		return RunBash(in.Command)

@@ -27,7 +27,7 @@ type Todo struct {
 	Status  TodoStatus `json:"status" jsonschema:"required,enum=pending,enum=in_progress,enum=completed"`
 }
 
-// todoWriteInput 是 todo_write 的入参：{"todos": [...]}，对应 Python 里 todos 数组对象
+// todoWriteInput is the input for todo_write: {"todos": [...]}, corresponding to the todos array object.
 type todoWriteInput struct {
 	Todos []Todo `json:"todos" jsonschema:"required"`
 }
@@ -37,6 +37,7 @@ var (
 	currentTodos = []Todo{}
 )
 
+// validateTodos validates the todos list, ensuring each item has a content and a valid status.
 func validateTodos(todos []Todo) ([]Todo, error) {
 	for i, t := range todos {
 		if t.Content == "" || t.Status == "" {
@@ -51,6 +52,7 @@ func validateTodos(todos []Todo) ([]Todo, error) {
 	return todos, nil
 }
 
+// normalizeTodos normalizes various forms of todos input (object, array, JSON string, etc.) into []Todo.
 func normalizeTodos(todos any) ([]Todo, error) {
 	if s, ok := todos.(string); ok {
 		var parsed any
@@ -72,7 +74,7 @@ func normalizeTodos(todos any) ([]Todo, error) {
 			rawList[i] = m
 		}
 	default:
-		// 尝试 JSON 往返（兼容 map[string]interface{} 切片等）
+		// Try a JSON round-trip to handle map[string]interface{} slices, etc.
 		b, err := json.Marshal(todos)
 		if err != nil {
 			return nil, fmt.Errorf("Error: todos must be a list")
@@ -100,14 +102,14 @@ func normalizeTodos(todos any) ([]Todo, error) {
 		content, _ := m["content"].(string)
 		status, _ := m["status"].(string)
 		if content == "" || status == "" {
-			// 字段缺失或类型不对
+			// Field is missing or has the wrong type.
 			if _, hasC := m["content"]; !hasC {
 				return nil, fmt.Errorf("Error: todos[%d] missing 'content' or 'status'", i)
 			}
 			if _, hasS := m["status"]; !hasS {
 				return nil, fmt.Errorf("Error: todos[%d] missing 'content' or 'status'", i)
 			}
-			// content/status 存在但不是 string
+			// content/status exist but are not strings.
 			return nil, fmt.Errorf("Error: todos[%d] missing 'content' or 'status'", i)
 		}
 
@@ -121,6 +123,7 @@ func normalizeTodos(todos any) ([]Todo, error) {
 	return result, nil
 }
 
+// RunTodoWrite validates and normalizes the todos input, saves the list, and returns the saved task count.
 func RunTodoWrite(todos any) (string, error) {
 	normalizedTodos, err := normalizeTodos(todos)
 	if err != nil {
@@ -148,6 +151,7 @@ func RunTodoWrite(todos any) (string, error) {
 	return fmt.Sprintf("Updated %d tasks", len(currentTodos)), nil
 }
 
+// registerToolTodoWrite registers the todo_write tool with the request.
 func registerToolTodoWrite(req *llm.ChatRequest) error {
 	return tool.RegisterTool(req, consts.ToolTodoWrite, "Create and manage a task list for your current coding session.", func(in todoWriteInput) (string, error) {
 		return RunTodoWrite(in.Todos)

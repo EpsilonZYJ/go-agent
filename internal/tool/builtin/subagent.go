@@ -20,6 +20,7 @@ type subagentInput struct {
 	Description string `json:"description" jsonschema:"required" jsonschema_description:"description"`
 }
 
+// extractText extracts all text from message content blocks and joins them into a string.
 func extractText(content []anthropic.ContentBlockParamUnion) string {
 	var parts []string
 	for _, b := range content {
@@ -30,6 +31,7 @@ func extractText(content []anthropic.ContentBlockParamUnion) string {
 	return strings.Join(parts, "\n")
 }
 
+// RunSubagent launches a subagent to handle a complex subtask and returns the final conclusion.
 func RunSubagent(description string) (string, error) {
 	logs.Info("subagent spawned", "description", description)
 	fmt.Printf("\n\033[35m[Subagent spawned]\033[0m\n")
@@ -65,7 +67,7 @@ func RunSubagent(description string) (string, error) {
 		var toolUses []anthropic.ContentBlockUnion
 		_, toolUses, allowIndex, denyIndex, askIndex, errIndex, denyErrMap, errErrMap, askReasonMap := execute.CollectLLMOutput(resp.Content)
 
-		// 无工具调用，本轮结束
+		// No tool calls in this turn; end the loop.
 		if resp.StopReason != anthropic.StopReasonToolUse || len(toolUses) == 0 {
 			logs.Debug("subagent turn finished", "loop", loop)
 			break
@@ -76,7 +78,7 @@ func RunSubagent(description string) (string, error) {
 
 	}
 
-	// 如果走了完整 30 轮还没结束，标记警告
+	// If all 30 rounds were used without finishing, log a warning.
 	if len(req.Messages) > 0 {
 		lastMsg := req.Messages[len(req.Messages)-1]
 		if lastMsg.Role == anthropic.MessageParamRoleUser {
@@ -108,6 +110,7 @@ func RunSubagent(description string) (string, error) {
 	return result, nil
 }
 
+// registerToolSubagent registers the subagent tool with the request.
 func registerToolSubagent(req *llm.ChatRequest) error {
 	return tool.RegisterTool(req, consts.ToolSubagent, "Launch a subagent to handle a complex subtask. Returns only the final conclusion.", func(in subagentInput) (string, error) {
 		return RunSubagent(in.Description)

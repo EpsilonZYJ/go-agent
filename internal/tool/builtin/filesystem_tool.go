@@ -36,6 +36,7 @@ type editInput struct {
 	NewText string `json:"new_text" jsonschema:"required" jsonschema_description:"The new text to replace the origin."`
 }
 
+// RunRead reads the content of the file at the given path; a limit of -1 means no line limit.
 func RunRead(path string, limit int) (string, error) {
 	path, err := files.SafePath(path)
 	if err != nil {
@@ -61,6 +62,7 @@ func RunRead(path string, limit int) (string, error) {
 	return strings.Join(lines, "\n"), nil
 }
 
+// RunWrite writes the given content to the file at the specified path.
 func RunWrite(path string, content string) (string, error) {
 	path, err := files.SafePath(path)
 	if err != nil {
@@ -84,6 +86,7 @@ func RunWrite(path string, content string) (string, error) {
 	return fmt.Sprintf("Wrote %d bytes to %s", len(content), path), nil
 }
 
+// RunEdit replaces the first occurrence of oldtxt with newtxt in the file at the given path and returns a confirmation message.
 func RunEdit(path string, oldtxt string, newtxt string) (string, error) {
 	path, err := files.SafePath(path)
 	if err != nil {
@@ -113,6 +116,7 @@ func RunEdit(path string, oldtxt string, newtxt string) (string, error) {
 	return fmt.Sprintf("Edited: %s", path), nil
 }
 
+// RunGlob finds files matching the pattern under the configured working directory and returns a list of relative paths.
 func RunGlob(pattern string) (string, error) {
 	workdir := config.Cfg.System.CurDir
 	matches, err := filepath.Glob(filepath.Join(workdir, pattern))
@@ -134,6 +138,7 @@ func RunGlob(pattern string) (string, error) {
 	return strings.Join(results, "\n"), nil
 }
 
+// registerToolFileSystem registers the read_file, write_file, edit_file, and glob tools with the request.
 func registerToolFileSystem(req *llm.ChatRequest) error {
 	if err := tool.RegisterTool(req, consts.ToolReadFile, "Read file contents.", func(in readInput) (string, error) {
 		return RunRead(in.Path, in.Limit)
@@ -158,6 +163,7 @@ func registerToolFileSystem(req *llm.ChatRequest) error {
 	return nil
 }
 
+// toSafeRelative converts a glob-matched path to a relative path; it returns false if the path escapes the working directory.
 func toSafeRelative(workdir string, match string) (string, bool) {
 	resolved := match
 	if p, err := filepath.EvalSymlinks(match); err == nil {
