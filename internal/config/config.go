@@ -3,6 +3,8 @@
 package config
 
 import (
+	"encoding/json"
+	"os"
 	"path/filepath"
 )
 
@@ -27,11 +29,24 @@ type SystemConfig struct {
 
 // ModelConfig 封装模型相关元数据。
 type ModelConfig struct {
-	Model     string `json:"model"`
-	MaxTokens int64  `json:"maxTokens"`
+	Model     string `json:"model_name"`
+	MaxTokens int64  `json:"max_tokens"`
 }
 
 var Cfg Config
+
+// LoadConfig load configuration from file
+func (cfg *Config) LoadConfig(relativePath string) error {
+	raw, err := os.ReadFile(relativePath)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(raw, cfg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func (cfg *SystemConfig) SetWorkDir(workdir string) {
 	cfg.CurDir = workdir

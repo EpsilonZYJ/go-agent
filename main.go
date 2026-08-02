@@ -23,25 +23,40 @@ import (
 
 func InitAgent() error {
 	var err error
-
-	// 模型设置
-	config.Cfg.Model.Model = os.Getenv("MODEL")
-	config.Cfg.Model.MaxTokens = consts.MaxTokens
-	config.Cfg.System.Url = os.Getenv("URL")
-	config.Cfg.System.ApiKey = os.Getenv("API_KEY")
-	if config.Cfg.Model.Model == "" || config.Cfg.System.Url == "" || config.Cfg.System.ApiKey == "" {
-		return fmt.Errorf("environment variables not set")
+	if err = config.Cfg.LoadConfig("gocode.json"); err != nil {
+		logs.Info("config file not found, using environment variables")
+		// 模型设置
+		config.Cfg.Model.Model = os.Getenv("MODEL")
+		config.Cfg.Model.MaxTokens = consts.MaxTokens
+		config.Cfg.System.Url = os.Getenv("URL")
+		config.Cfg.System.ApiKey = os.Getenv("API_KEY")
+		if config.Cfg.Model.Model == "" || config.Cfg.System.Url == "" || config.Cfg.System.ApiKey == "" {
+			return fmt.Errorf("environment variables not set")
+		}
 	}
-	logs.Info("agent initializing", "model", config.Cfg.Model.Model, "url", config.Cfg.System.Url)
+	if config.Cfg.Model.Model == "" {
+		return fmt.Errorf("model name not set")
+	} else if config.Cfg.Model.MaxTokens == 0 {
+		return fmt.Errorf("max tokens not set")
+	} else if config.Cfg.System.ApiKey == "" {
+		return fmt.Errorf("api key not set")
+	} else if config.Cfg.System.Url == "" {
+		return fmt.Errorf("url not set")
+	}
+	logs.Info("agent initializing",
+		"model", config.Cfg.Model.Model,
+		"url", config.Cfg.System.Url,
+		"max_tokens", config.Cfg.Model.MaxTokens,
+	)
 
 	// 当前项目系统设置
-	curdir, err := os.Getwd()
+	curDir, err := os.Getwd()
 	if err != nil {
 		logs.Warn("get working directory failed", "err", err)
 		return fmt.Errorf("get current directory failed: %v", err)
 	}
 
-	config.Cfg.System.SetWorkDir(curdir)
+	config.Cfg.System.SetWorkDir(curDir)
 
 	logs.Info("working directory", "dir", config.Cfg.System.CurDir)
 

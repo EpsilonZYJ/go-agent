@@ -1,0 +1,10 @@
+{
+  "system": {
+    "url": "https://XXX.XXX.XXX/",
+    "api_key": "sk_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  },
+  "model": {
+    "model_name": "XXXX",
+    "max_tokens": 12345
+  }
+}

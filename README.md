@@ -9,9 +9,42 @@ A command-line coding agent built with Go and the Anthropic Claude API.
 - Go 1.26+
 - A reachable Claude-compatible API endpoint and API key
 
-### Configure Environment Variables
+### Configuration
 
-Provide model and auth info via environment variables:
+The agent supports two ways of providing model and auth info, with the
+config file taking priority:
+
+#### 1. JSON config file (`gocode.json`, preferred)
+
+Create a `gocode.json` in the project root (the working directory):
+
+```json
+{
+  "system": {
+    "url": "https://api.anthropic.com",
+    "api_key": "sk-ant-..."
+  },
+  "model": {
+    "model_name": "claude-3-5-sonnet-20241022",
+    "max_tokens": 16000
+  }
+}
+```
+
+| Field                  | Description                                   |
+| ---------------------- | --------------------------------------------- |
+| `system.url`           | Claude-compatible API endpoint                |
+| `system.api_key`       | Your API key                                  |
+| `model.model_name`     | Model name                                    |
+| `model.max_tokens`     | Maximum tokens per response                   |
+
+If `gocode.json` is present, it is loaded on startup and the environment
+variables below are ignored.
+
+#### 2. Environment variables (fallback)
+
+If `gocode.json` is not found, the agent falls back to environment
+variables:
 
 ```bash
 export URL="https://api.anthropic.com"          # or a compatible endpoint

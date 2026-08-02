@@ -10,3 +10,4 @@ go-agent
 .task_outputs/
 compact_demo/
 .gocode/
+gocode.json
