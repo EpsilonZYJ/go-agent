@@ -114,7 +114,7 @@ func RunEdit(path string, oldtxt string, newtxt string) (string, error) {
 }
 
 func RunGlob(pattern string) (string, error) {
-	workdir := config.SysCfg.CurDir
+	workdir := config.Cfg.System.CurDir
 	matches, err := filepath.Glob(filepath.Join(workdir, pattern))
 	if err != nil {
 		logs.Warn("glob failed", "pattern", pattern, "err", err)

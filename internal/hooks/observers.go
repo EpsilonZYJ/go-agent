@@ -17,7 +17,7 @@ var printMu sync.Mutex
 
 // workdirHook: UserPromptSubmit —— 提示当前工作目录。
 func workdirHook(query string) {
-	fmt.Printf("\033[90m[HOOK] UserPromptSubmit: working in %s\033[0m\n", config.SysCfg.CurDir)
+	fmt.Printf("\033[90m[HOOK] UserPromptSubmit: working in %s\033[0m\n", config.Cfg.System.CurDir)
 }
 
 // logHook: PreToolUse —— 记录每次工具调用（单线程 collect 阶段触发，无需加锁）。

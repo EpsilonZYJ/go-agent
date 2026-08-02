@@ -18,7 +18,7 @@ func writeMemoryFile(name string, memType MemType, description string, body stri
 	name = strings.ReplaceAll(name, " ", "-")
 	name = strings.ReplaceAll(name, "/", "-")
 	filename := name + ".md"
-	path := filepath.Join(config.SysCfg.MemoryDir, filename)
+	path := filepath.Join(config.Cfg.System.MemoryDir, filename)
 	file, err := os.Create(path)
 	if err != nil {
 		return "", err
@@ -32,7 +32,7 @@ func writeMemoryFile(name string, memType MemType, description string, body stri
 }
 
 func readMemoryFile(filename string) string {
-	path := filepath.Join(config.SysCfg.MemoryDir, filename)
+	path := filepath.Join(config.Cfg.System.MemoryDir, filename)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return ""
 	}
@@ -45,7 +45,7 @@ func readMemoryFile(filename string) string {
 
 func listMemoryFiles() []Memory {
 	var result []Memory
-	matches, err := filepath.Glob(filepath.Join(config.SysCfg.MemoryDir, "*.md"))
+	matches, err := filepath.Glob(filepath.Join(config.Cfg.System.MemoryDir, "*.md"))
 	if err != nil {
 		return result
 	}

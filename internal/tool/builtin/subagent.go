@@ -33,7 +33,7 @@ func extractText(content []anthropic.ContentBlockParamUnion) string {
 func RunSubagent(description string) (string, error) {
 	logs.Info("subagent spawned", "description", description)
 	fmt.Printf("\n\033[35m[Subagent spawned]\033[0m\n")
-	req := llm.NewChatRequest(config.ModelCfg.Model, config.ModelCfg.MaxTokens, config.SysCfg.SubSystemPrompt)
+	req := llm.NewChatRequest(config.Cfg.Model.Model, config.Cfg.Model.MaxTokens, config.Cfg.System.SubSystemPrompt)
 	err := SubAgentRegisterBuiltinTools(req)
 	if err != nil {
 		logs.Warn("subagent tool registration failed", "err", err)

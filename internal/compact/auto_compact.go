@@ -18,10 +18,10 @@ import (
 )
 
 func writeTranscript(msgs []anthropic.MessageParam) string {
-	if err := os.MkdirAll(config.SysCfg.TranscriptDir, 0755); err != nil {
-		logs.Error("llm summary dir mkdir failed", "dir", config.SysCfg.TranscriptDir, "error", err)
+	if err := os.MkdirAll(config.Cfg.System.TranscriptDir, 0755); err != nil {
+		logs.Error("llm summary dir mkdir failed", "dir", config.Cfg.System.TranscriptDir, "error", err)
 	}
-	path := filepath.Join(config.SysCfg.TranscriptDir, fmt.Sprintf("transcript_%d.jsonl", time.Now().Unix()))
+	path := filepath.Join(config.Cfg.System.TranscriptDir, fmt.Sprintf("transcript_%d.jsonl", time.Now().Unix()))
 	var b strings.Builder
 	for _, msg := range msgs {
 		line, _ := json.Marshal(msg)
@@ -55,8 +55,8 @@ func summarizeHistory(msgs []anthropic.MessageParam) string {
 			Messages: []anthropic.MessageParam{
 				anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
 			},
-			Model:     config.ModelCfg.Model,
-			MaxTokens: config.ModelCfg.MaxTokens,
+			Model:     config.Cfg.Model.Model,
+			MaxTokens: config.Cfg.Model.MaxTokens,
 		},
 		0, // 单次调用，不重试
 	)

@@ -13,7 +13,7 @@ func SafePath(p string) (string, error) {
 	var path string
 	var workdir string
 
-	workdir, err := filepath.Abs(config.SysCfg.CurDir)
+	workdir, err := filepath.Abs(config.Cfg.System.CurDir)
 	if err != nil {
 		return "", err
 	}
@@ -38,7 +38,7 @@ func SafePath(p string) (string, error) {
 
 func PathIsSafe(p string) bool {
 	var path string
-	workdir, err := filepath.Abs(config.SysCfg.CurDir)
+	workdir, err := filepath.Abs(config.Cfg.System.CurDir)
 	if err != nil {
 		return false
 	}

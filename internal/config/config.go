@@ -2,8 +2,17 @@
 
 package config
 
-import "path/filepath"
+import (
+	"path/filepath"
+)
 
+// Config 封装系统配置与模型配置。
+type Config struct {
+	System SystemConfig `json:"system"`
+	Model  ModelConfig  `json:"model"`
+}
+
+// SystemConfig 封装系统相关元数据。
 type SystemConfig struct {
 	Url             string `json:"url"`
 	ApiKey          string `json:"api_key"`
@@ -16,13 +25,13 @@ type SystemConfig struct {
 	MemoryDir       string `json:"memory_dir"`
 }
 
+// ModelConfig 封装模型相关元数据。
 type ModelConfig struct {
 	Model     string `json:"model"`
 	MaxTokens int64  `json:"maxTokens"`
 }
 
-var SysCfg SystemConfig
-var ModelCfg ModelConfig
+var Cfg Config
 
 func (cfg *SystemConfig) SetWorkDir(workdir string) {
 	cfg.CurDir = workdir

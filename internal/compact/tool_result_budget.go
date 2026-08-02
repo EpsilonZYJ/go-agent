@@ -20,11 +20,11 @@ func persistLargeOutput(toolUseID string, output string) string {
 	if utf8.RuneCountInString(output) <= consts.PersistThreshold {
 		return output
 	}
-	err := os.MkdirAll(config.SysCfg.ToolResultDir, 0755)
+	err := os.MkdirAll(config.Cfg.System.ToolResultDir, 0755)
 	if err != nil {
-		logs.Error("tool result dir mkdir failed", "dir", config.SysCfg.ToolResultDir, "err", err)
+		logs.Error("tool result dir mkdir failed", "dir", config.Cfg.System.ToolResultDir, "err", err)
 	}
-	path := filepath.Join(config.SysCfg.ToolResultDir, toolUseID+".txt")
+	path := filepath.Join(config.Cfg.System.ToolResultDir, toolUseID+".txt")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err := os.WriteFile(path, []byte(output), 0644)
 		if err != nil {

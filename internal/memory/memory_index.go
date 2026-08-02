@@ -13,7 +13,7 @@ import (
 )
 
 func rebuildIndex() error {
-	matches, err := filepath.Glob(filepath.Join(config.SysCfg.MemoryDir, "*.md"))
+	matches, err := filepath.Glob(filepath.Join(config.Cfg.System.MemoryDir, "*.md"))
 	if err != nil {
 		return err
 	}
@@ -47,14 +47,14 @@ func rebuildIndex() error {
 	if len(lines) > 0 {
 		content = strings.Join(lines, "\n") + "\n"
 	}
-	return os.WriteFile(filepath.Join(config.SysCfg.MemoryDir, "index.md"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(config.Cfg.System.MemoryDir, "index.md"), []byte(content), 0644)
 }
 
 func readMemoryIndex() string {
-	if _, err := os.Stat(filepath.Join(config.SysCfg.MemoryDir, "MEMORY.md")); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(config.Cfg.System.MemoryDir, "MEMORY.md")); errors.Is(err, os.ErrNotExist) {
 		return ""
 	}
-	content, err := os.ReadFile(filepath.Join(config.SysCfg.MemoryDir, "MEMORY.md"))
+	content, err := os.ReadFile(filepath.Join(config.Cfg.System.MemoryDir, "MEMORY.md"))
 	if err != nil {
 		return ""
 	}

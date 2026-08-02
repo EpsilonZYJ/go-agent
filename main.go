@@ -25,14 +25,14 @@ func InitAgent() error {
 	var err error
 
 	// 模型设置
-	config.ModelCfg.Model = os.Getenv("MODEL")
-	config.ModelCfg.MaxTokens = consts.MaxTokens
-	config.SysCfg.Url = os.Getenv("URL")
-	config.SysCfg.ApiKey = os.Getenv("API_KEY")
-	if config.ModelCfg.Model == "" || config.SysCfg.Url == "" || config.SysCfg.ApiKey == "" {
+	config.Cfg.Model.Model = os.Getenv("MODEL")
+	config.Cfg.Model.MaxTokens = consts.MaxTokens
+	config.Cfg.System.Url = os.Getenv("URL")
+	config.Cfg.System.ApiKey = os.Getenv("API_KEY")
+	if config.Cfg.Model.Model == "" || config.Cfg.System.Url == "" || config.Cfg.System.ApiKey == "" {
 		return fmt.Errorf("environment variables not set")
 	}
-	logs.Info("agent initializing", "model", config.ModelCfg.Model, "url", config.SysCfg.Url)
+	logs.Info("agent initializing", "model", config.Cfg.Model.Model, "url", config.Cfg.System.Url)
 
 	// 当前项目系统设置
 	curdir, err := os.Getwd()
@@ -41,17 +41,17 @@ func InitAgent() error {
 		return fmt.Errorf("get current directory failed: %v", err)
 	}
 
-	config.SysCfg.SetWorkDir(curdir)
+	config.Cfg.System.SetWorkDir(curdir)
 
-	logs.Info("working directory", "dir", config.SysCfg.CurDir)
+	logs.Info("working directory", "dir", config.Cfg.System.CurDir)
 
-	skill.ScanSkills(config.SysCfg.SkillsDir)
-	config.SysCfg.SystemPrompt = config.BuildSystemPrompt()
-	config.SysCfg.SubSystemPrompt = config.BuildSubSystemPrompt()
+	skill.ScanSkills(config.Cfg.System.SkillsDir)
+	config.Cfg.System.SystemPrompt = config.BuildSystemPrompt()
+	config.Cfg.System.SubSystemPrompt = config.BuildSubSystemPrompt()
 
 	llm.Client = anthropic.NewClient(
-		option.WithBaseURL(config.SysCfg.Url),
-		option.WithAPIKey(config.SysCfg.ApiKey),
+		option.WithBaseURL(config.Cfg.System.Url),
+		option.WithAPIKey(config.Cfg.System.ApiKey),
 	)
 	logs.Info("agent initialized successfully")
 	return nil
@@ -64,7 +64,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(consts.ExitEnvError)
 	}
-	req := llm.NewChatRequest(config.ModelCfg.Model, config.ModelCfg.MaxTokens, config.SysCfg.SystemPrompt)
+	req := llm.NewChatRequest(config.Cfg.Model.Model, config.Cfg.Model.MaxTokens, config.Cfg.System.SystemPrompt)
 	if err := builtin.RegisterBuiltinTools(req); err != nil {
 		logs.Error("register builtin tools failed", "err", err)
 		fmt.Printf("register tools failed: %v\n", err)
