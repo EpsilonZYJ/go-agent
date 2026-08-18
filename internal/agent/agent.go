@@ -24,24 +24,33 @@ var (
 	syncRST        sync.RWMutex
 )
 
+// RoundSinceTodoSetZero resets the round counter (rounds elapsed since the last
+// todo_write call) to zero. It is safe for concurrent use.
 func RoundSinceTodoSetZero() {
 	syncRST.Lock()
 	defer syncRST.Unlock()
 	roundSinceTodo = 0
 }
 
+// GetRoundSinceTodo returns the number of agent rounds elapsed since the last
+// todo_write call. It is safe for concurrent use.
 func GetRoundSinceTodo() int {
 	syncRST.RLock()
 	defer syncRST.RUnlock()
 	return roundSinceTodo
 }
 
+// IncreaseRoundSinceTodoByOne increments the round counter (rounds elapsed since the
+// last todo_write call) by one. It is safe for concurrent use.
 func IncreaseRoundSinceTodoByOne() {
 	syncRST.Lock()
 	defer syncRST.Unlock()
 	roundSinceTodo++
 }
 
+// compactToolUseID scans the given tool-use content blocks and returns the ID of the
+// first tool call whose name is ToolContextCompact, along with true. If no such tool
+// call is found, it returns an empty string and false.
 func compactToolUseID(toolUses []anthropic.ContentBlockUnion) (string, bool) {
 	for _, tu := range toolUses {
 		if tu.Name == consts.ToolContextCompact {
@@ -51,6 +60,10 @@ func compactToolUseID(toolUses []anthropic.ContentBlockUnion) (string, bool) {
 	return "", false
 }
 
+// AgentLoop runs the main agent conversation loop: it conditionally compacts the
+// context, calls the LLM with automatic retries, dispatches tool calls, and appends
+// results back to the message history until the conversation ends or an unrecoverable
+// error occurs.
 func AgentLoop(request *llm.ChatRequest) {
 	var reactiveTrials int = 0 // 压缩重试次数（网络重试已由 llm.Call 内部处理）
 
