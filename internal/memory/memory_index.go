@@ -12,6 +12,10 @@ import (
 	"strings"
 )
 
+// rebuildIndex scans all .md memory files under the memory directory (skipping
+// MEMORY.md), aggregates each memory's name, filename, and description, and writes
+// an index.md index file. If the frontmatter lacks a description, the first line of
+// the body (up to 80 characters) is used instead.
 func rebuildIndex() error {
 	matches, err := filepath.Glob(filepath.Join(config.Cfg.System.MemoryDir, "*.md"))
 	if err != nil {
@@ -50,6 +54,8 @@ func rebuildIndex() error {
 	return os.WriteFile(filepath.Join(config.Cfg.System.MemoryDir, "index.md"), []byte(content), 0644)
 }
 
+// readMemoryIndex reads the content of the memory index file MEMORY.md and returns
+// it. It returns an empty string if the file does not exist or cannot be read.
 func readMemoryIndex() string {
 	if _, err := os.Stat(filepath.Join(config.Cfg.System.MemoryDir, "MEMORY.md")); errors.Is(err, os.ErrNotExist) {
 		return ""
