@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
+
 package memory
 
 import (
@@ -13,7 +15,7 @@ import (
 
 func ExtractMemories(message []anthropic.MessageParam) {
 	var dialogueParts []string
-	for _, msg := range message[len(message)-10:] {
+	for _, msg := range message[max(0, len(message)-10):] {
 		role := msg.Role
 		content := utils.GetTextFromAnthropicMessageParam(msg)
 		content = strings.TrimSpace(content)

@@ -1,3 +1,5 @@
+// Copyright (c) 2026 Yujie Zhou. Licensed under the MIT License.
+
 package consts
 
 // MaxRecentMessagesForRelevantSelect 在进行相关性选择时，最多保留的最近消息条数。超过此条数的消息将被忽略，以提高相关性选择的效率。
