@@ -49,8 +49,10 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 			}
 		}
 	}
+	slices.Reverse(recentContext)
 	recent := strings.Join(recentContext, " ")
 	recent = strings.TrimSpace(recent)
+	recent = utils.StringTruncateRunes(recent, 2000)
 	if len(recent) <= 0 {
 		return []string{}
 	}
@@ -73,7 +75,7 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 			Messages: []anthropic.MessageParam{
 				anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
 			},
-			MaxTokens: config.Cfg.Model.MaxTokens,
+			MaxTokens: 200,
 			Model:     config.Cfg.Model.Model,
 		},
 		0,
