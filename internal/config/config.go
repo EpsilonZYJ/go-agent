@@ -55,4 +55,5 @@ func (cfg *SystemConfig) SetWorkDir(workdir string) {
 	cfg.ToolResultDir = filepath.Join(path, ".task_outputs", "tool-results")
 	cfg.TranscriptDir = filepath.Join(path, ".transcripts")
 	cfg.MemoryDir = filepath.Join(path, ".memory")
+	_ = os.MkdirAll(cfg.MemoryDir, 0755)
 }

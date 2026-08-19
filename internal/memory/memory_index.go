@@ -51,7 +51,7 @@ func rebuildIndex() error {
 	if len(lines) > 0 {
 		content = strings.Join(lines, "\n") + "\n"
 	}
-	return os.WriteFile(filepath.Join(config.Cfg.System.MemoryDir, "index.md"), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(config.Cfg.System.MemoryDir, memoryIndexFilename), []byte(content), 0644)
 }
 
 // ReadMemoryIndex reads the content of the memory index file MEMORY.md and returns

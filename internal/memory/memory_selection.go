@@ -118,7 +118,7 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 	var selected []string
 	for _, f := range files {
 		text := strings.ToLower(f.Name + " " + f.Description)
-		if strContainsAny(text, selected) {
+		if strContainsAny(text, keywords) {
 			selected = append(selected, f.Filename)
 			if len(selected) >= maxItems {
 				break
@@ -128,7 +128,7 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 	return selected
 }
 
-func loadMemories(messages []anthropic.MessageParam) string {
+func LoadMemories(messages []anthropic.MessageParam) string {
 	selectedFiles := selectRelevantMemories(messages, consts.MaxRelevantMemoriesToSelect)
 	if len(selectedFiles) <= 0 {
 		return ""

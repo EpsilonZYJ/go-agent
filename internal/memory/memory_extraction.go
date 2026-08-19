@@ -11,7 +11,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 )
 
-func extractMemories(message []anthropic.MessageParam) {
+func ExtractMemories(message []anthropic.MessageParam) {
 	var dialogueParts []string
 	for _, msg := range message[len(message)-10:] {
 		role := msg.Role
