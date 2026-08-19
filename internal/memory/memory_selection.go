@@ -3,7 +3,6 @@ package memory
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -15,8 +14,6 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
-
-var memSelectionRe = regexp.MustCompile(`(?s)\[.*?\]`)
 
 func strContainsAny(s string, keywords []string) bool {
 	for _, kw := range keywords {

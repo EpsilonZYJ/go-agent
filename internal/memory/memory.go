@@ -2,6 +2,8 @@
 
 package memory
 
+import "regexp"
+
 type MemType string
 
 type Memory struct {
@@ -12,9 +14,21 @@ type Memory struct {
 	Body        string  `json:"body"`
 }
 
+type extractedMemory struct {
+	Name        string  `json:"name"`
+	Type        MemType `json:"type"`
+	Description string  `json:"description"`
+	Body        string  `json:"body"`
+}
+
 const (
 	MemTypeUser      MemType = "user"
 	MemTypeFeedback  MemType = "feedback"
 	MemTypeProject   MemType = "project"
 	MemTypeReference MemType = "reference"
 )
+
+const memoryIndexFilename = "MEMORY.md"
+
+var memSelectionRe = regexp.MustCompile(`(?s)\[.*?\]`)
+var memExtractionRe = regexp.MustCompile(`(?s)\[.*\]`)

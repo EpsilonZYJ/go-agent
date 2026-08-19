@@ -63,7 +63,7 @@ func listMemoryFiles() []Memory {
 	}
 	for _, match := range matches {
 		base := filepath.Base(match)
-		if base == "MEMORY.md" {
+		if base == memoryIndexFilename {
 			continue
 		}
 		raw, err := os.ReadFile(match)

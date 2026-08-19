@@ -6,20 +6,10 @@ import (
 	"go-agent/internal/config"
 	"go-agent/internal/llm"
 	"go-agent/internal/utils"
-	"regexp"
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
-
-var memExtractionRe = regexp.MustCompile(`(?s)\[.*\]`)
-
-type extractedMemory struct {
-	Name        string  `json:"name"`
-	Type        MemType `json:"type"`
-	Description string  `json:"description"`
-	Body        string  `json:"body"`
-}
 
 func extractMemories(message []anthropic.MessageParam) {
 	var dialogueParts []string
@@ -50,14 +40,14 @@ func extractMemories(message []anthropic.MessageParam) {
 		"Extract user preferences, constraints, or project facts from this dialogue.\n"+
 			"Return a JSON array. Each item: {name, type, description, body}.\n"+
 			"- name: short kebab-case identifier (e.g. 'user-preference-tabs')\n"+
-			"- type: one of 'user' (user preference), 'feedback' (guidance), "+
-			"'project' (project fact), 'reference' (external pointer)\n"+
+			"- type: one of '%s' (user preference), '%s' (guidance), "+
+			"'%s' (project fact), '%s' (external pointer)\n"+
 			"- description: one-line summary for index lookup\n"+
 			"- body: full detail in markdown\n"+
 			"If nothing new or already covered by existing memories, return [].\n\n"+
 			"Existing memories:\n%s\n\n"+
 			"Dialogue:\n%s",
-		existingDesc, utils.StringTruncateRunes(dialogue, 4000),
+		MemTypeUser, MemTypeFeedback, MemTypeProject, MemTypeReference, existingDesc, utils.StringTruncateRunes(dialogue, 4000),
 	)
 
 	resp, err := llm.Call(

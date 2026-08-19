@@ -24,7 +24,7 @@ func rebuildIndex() error {
 	var lines []string
 	for _, match := range matches {
 		base := filepath.Base(match)
-		if base == "MEMORY.md" {
+		if base == memoryIndexFilename {
 			continue
 		}
 		raw, err := os.ReadFile(match)
@@ -57,10 +57,10 @@ func rebuildIndex() error {
 // readMemoryIndex reads the content of the memory index file MEMORY.md and returns
 // it. It returns an empty string if the file does not exist or cannot be read.
 func readMemoryIndex() string {
-	if _, err := os.Stat(filepath.Join(config.Cfg.System.MemoryDir, "MEMORY.md")); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(config.Cfg.System.MemoryDir, memoryIndexFilename)); errors.Is(err, os.ErrNotExist) {
 		return ""
 	}
-	content, err := os.ReadFile(filepath.Join(config.Cfg.System.MemoryDir, "MEMORY.md"))
+	content, err := os.ReadFile(filepath.Join(config.Cfg.System.MemoryDir, memoryIndexFilename))
 	if err != nil {
 		return ""
 	}
