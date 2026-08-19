@@ -9,10 +9,10 @@ import (
 	"go-agent/internal/consts"
 	"go-agent/internal/llm"
 	"go-agent/internal/logs"
+	"go-agent/internal/utils"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -21,7 +21,7 @@ func writeTranscript(msgs []anthropic.MessageParam) string {
 	if err := os.MkdirAll(config.Cfg.System.TranscriptDir, 0755); err != nil {
 		logs.Error("llm summary dir mkdir failed", "dir", config.Cfg.System.TranscriptDir, "error", err)
 	}
-	path := filepath.Join(config.Cfg.System.TranscriptDir, fmt.Sprintf("transcript_%d.jsonl", time.Now().Format("20060102150405")))
+	path := filepath.Join(config.Cfg.System.TranscriptDir, fmt.Sprintf("transcript_%s.jsonl", utils.NowTime()))
 	var b strings.Builder
 	for _, msg := range msgs {
 		line, _ := json.Marshal(msg)

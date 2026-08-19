@@ -1,0 +1,104 @@
+package memory
+
+import (
+	"encoding/json"
+	"fmt"
+	"go-agent/internal/config"
+	"go-agent/internal/llm"
+	"go-agent/internal/utils"
+	"regexp"
+	"strings"
+
+	"github.com/anthropics/anthropic-sdk-go"
+)
+
+var memExtractionRe = regexp.MustCompile(`(?s)\[.*\]`)
+
+type extractedMemory struct {
+	Name        string  `json:"name"`
+	Type        MemType `json:"type"`
+	Description string  `json:"description"`
+	Body        string  `json:"body"`
+}
+
+func extractMemories(message []anthropic.MessageParam) {
+	var dialogueParts []string
+	for _, msg := range message[len(message)-10:] {
+		role := msg.Role
+		content := utils.GetTextFromAnthropicMessageParam(msg)
+		content = strings.TrimSpace(content)
+		dialogueParts = append(dialogueParts, fmt.Sprintf("%s: %s", role, content))
+	}
+	dialogue := strings.Join(dialogueParts, "\n")
+	dialogue = strings.TrimSpace(dialogue)
+
+	existing := listMemoryFiles()
+	var existingDesc string
+	{
+		if len(existing) <= 0 {
+			existingDesc = "(none)"
+		} else {
+			var existingDescs []string
+			for _, m := range existing {
+				existingDescs = append(existingDescs, fmt.Sprintf("- %s: %s", m.Name, m.Description))
+			}
+			existingDesc = strings.Join(existingDescs, "\n")
+		}
+	}
+
+	prompt := fmt.Sprintf(
+		"Extract user preferences, constraints, or project facts from this dialogue.\n"+
+			"Return a JSON array. Each item: {name, type, description, body}.\n"+
+			"- name: short kebab-case identifier (e.g. 'user-preference-tabs')\n"+
+			"- type: one of 'user' (user preference), 'feedback' (guidance), "+
+			"'project' (project fact), 'reference' (external pointer)\n"+
+			"- description: one-line summary for index lookup\n"+
+			"- body: full detail in markdown\n"+
+			"If nothing new or already covered by existing memories, return [].\n\n"+
+			"Existing memories:\n%s\n\n"+
+			"Dialogue:\n%s",
+		existingDesc, utils.StringTruncateRunes(dialogue, 4000),
+	)
+
+	resp, err := llm.Call(
+		anthropic.MessageNewParams{
+			Messages: []anthropic.MessageParam{
+				anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
+			},
+			MaxTokens: 800,
+			Model:     config.Cfg.Model.Model,
+		},
+		0,
+	)
+	if err != nil {
+		return
+	}
+	text := utils.GetTextFromAnthropicMessageParam(resp.ToParam())
+	text = strings.TrimSpace(text)
+	match := memExtractionRe.FindString(text)
+	if match == "" {
+		return
+	}
+	var items []extractedMemory
+	if err := json.Unmarshal([]byte(match), &items); err != nil {
+		return
+	}
+	var count = 0
+	for _, mem := range items {
+		if mem.Description == "" || mem.Body == "" {
+			continue
+		}
+		if mem.Name == "" {
+			mem.Name = fmt.Sprintf("memory_%s", utils.NowTime())
+		}
+		if mem.Type == "" {
+			mem.Type = MemTypeUser
+		}
+		if _, err := writeMemoryFile(mem.Name, mem.Type, mem.Description, mem.Body); err == nil {
+			count++
+		}
+	}
+	if count > 0 {
+		fmt.Printf("\n\033[33m[Memory: extracted %d new memories]\033[0m\n", count)
+	}
+}
