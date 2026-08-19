@@ -1,0 +1,160 @@
+package memory
+
+import (
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"slices"
+	"strings"
+	"unicode/utf8"
+
+	"go-agent/internal/config"
+	"go-agent/internal/consts"
+	"go-agent/internal/llm"
+
+	"github.com/anthropics/anthropic-sdk-go"
+)
+
+var re = regexp.MustCompile(`(?s)\[.*?\]`)
+
+func strContainsAny(s string, keywords []string) bool {
+	for _, kw := range keywords {
+		if strings.Contains(s, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []string {
+	files := listMemoryFiles()
+	if len(files) <= 0 {
+		return []string{}
+	}
+
+	// collect recent user text for context
+	var recentContext []string
+	slices.Reverse(messages)
+	for _, msg := range messages {
+		if msg.Role == anthropic.MessageParamRoleUser {
+			content := msg.Content
+			var contents []string
+			for _, c := range content {
+				if c.OfText != nil {
+					contents = append(contents, c.OfText.Text)
+				}
+			}
+			toAppend := strings.Join(contents, " ")
+			if toAppend != "" {
+				recentContext = append(recentContext, toAppend)
+			} else {
+				continue
+			}
+			if len(recentContext) >= consts.MaxRecentMessagesForRelevantSelect {
+				break
+			}
+		}
+	}
+	recent := strings.Join(recentContext, " ")
+	recent = strings.TrimSpace(recent)
+	if len(recent) <= 0 {
+		return []string{}
+	}
+	var catalogLines []string
+	for idx, f := range files {
+		catalogLines = append(catalogLines, fmt.Sprintf("%d: %s — %s", idx, f.Name, f.Description))
+	}
+	catalog := strings.Join(catalogLines, " ")
+	prompt := fmt.Sprintf(
+		"Given the recent conversation and the memory catalog below, "+
+			"select the indices of memories that are clearly relevant. "+
+			"Return ONLY a JSON array of integers, e.g. [0, 3]. "+
+			"If none are relevant, return [].\n\n"+
+			"Recent conversation:\n%s\n\n"+
+			"Memory catalog:\n%s",
+		recent, catalog,
+	)
+	resp, err := llm.Call(
+		anthropic.MessageNewParams{
+			Messages: []anthropic.MessageParam{
+				anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
+			},
+			MaxTokens: config.Cfg.Model.MaxTokens,
+			Model:     config.Cfg.Model.Model,
+		},
+		0,
+	)
+	if err == nil {
+		var texts []string
+		var text string
+
+		raw := resp.Content
+		for _, block := range raw {
+			if block.Type == consts.Text {
+				texts = append(texts, block.Text)
+			}
+		}
+		text = strings.Join(texts, " ")
+		text = strings.TrimSpace(text)
+		match := re.FindString(text)
+		if match != "" {
+			var indices []any
+			if err := json.Unmarshal([]byte(match), &indices); err != nil {
+				return []string{}
+			}
+			selected := make([]string, 0, maxItems)
+			for _, idx := range indices {
+				f, ok := idx.(float64)
+				if !ok {
+					continue
+				}
+				i := int(f)
+				if f != float64(i) {
+					continue
+				}
+				if i >= 0 && i < len(files) {
+					selected = append(selected, files[i].Filename)
+					if len(selected) >= maxItems {
+						break
+					}
+				}
+			}
+			return selected
+		}
+	}
+
+	// fallback, keyword matching on name + description
+	var keywords []string
+	for _, rc := range strings.Fields(strings.ToLower(recent)) {
+		if utf8.RuneCountInString(rc) > 3 {
+			keywords = append(keywords, rc)
+		}
+	}
+	var selected []string
+	for _, f := range files {
+		text := strings.ToLower(f.Name + " " + f.Description)
+		if strContainsAny(text, selected) {
+			selected = append(selected, f.Filename)
+			if len(selected) >= maxItems {
+				break
+			}
+		}
+	}
+	return selected
+}
+
+func loadMemories(messages []anthropic.MessageParam) string {
+	selectedFiles := selectRelevantMemories(messages, consts.MaxRelevantMemoriesToSelect)
+	if len(selectedFiles) <= 0 {
+		return ""
+	}
+	parts := []string{"<relevant_memories>"}
+	for _, filename := range selectedFiles {
+		content := readMemoryFile(filename)
+		if content != "" {
+			parts = append(parts, content)
+		}
+	}
+	parts = append(parts, "</relevant_memories>")
+	return strings.Join(parts, "\n\n")
+}
