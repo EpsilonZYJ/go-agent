@@ -16,7 +16,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 )
 
-var re = regexp.MustCompile(`(?s)\[.*?\]`)
+var memSelectionRe = regexp.MustCompile(`(?s)\[.*?\]`)
 
 func strContainsAny(s string, keywords []string) bool {
 	for _, kw := range keywords {
@@ -81,18 +81,10 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 		0,
 	)
 	if err == nil {
-		var texts []string
 		var text string
-
-		raw := resp.Content
-		for _, block := range raw {
-			if block.Type == consts.Text {
-				texts = append(texts, block.Text)
-			}
-		}
-		text = strings.Join(texts, " ")
+		text = utils.GetTextFromAnthropicMessageParam(resp.ToParam())
 		text = strings.TrimSpace(text)
-		match := re.FindString(text)
+		match := memSelectionRe.FindString(text)
 		if match != "" {
 			var indices []any
 			if err := json.Unmarshal([]byte(match), &indices); err != nil {
