@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"go-agent/internal/system"
 	"os"
 	"strings"
 
@@ -61,8 +62,8 @@ func InitAgent() error {
 	logs.Info("working directory", "dir", config.Cfg.System.CurDir)
 
 	skill.ScanSkills(config.Cfg.System.SkillsDir)
-	config.Cfg.System.SystemPrompt = config.BuildSystemPrompt()
-	config.Cfg.System.SubSystemPrompt = config.BuildSubSystemPrompt()
+	config.Cfg.System.SystemPrompt = system.BuildSystemPrompt()
+	config.Cfg.System.SubSystemPrompt = system.BuildSubSystemPrompt()
 
 	llm.Client = anthropic.NewClient(
 		option.WithBaseURL(config.Cfg.System.Url),

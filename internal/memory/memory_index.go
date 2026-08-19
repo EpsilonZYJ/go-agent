@@ -54,9 +54,9 @@ func rebuildIndex() error {
 	return os.WriteFile(filepath.Join(config.Cfg.System.MemoryDir, "index.md"), []byte(content), 0644)
 }
 
-// readMemoryIndex reads the content of the memory index file MEMORY.md and returns
+// ReadMemoryIndex reads the content of the memory index file MEMORY.md and returns
 // it. It returns an empty string if the file does not exist or cannot be read.
-func readMemoryIndex() string {
+func ReadMemoryIndex() string {
 	if _, err := os.Stat(filepath.Join(config.Cfg.System.MemoryDir, memoryIndexFilename)); errors.Is(err, os.ErrNotExist) {
 		return ""
 	}
