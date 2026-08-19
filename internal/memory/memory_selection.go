@@ -11,6 +11,7 @@ import (
 	"go-agent/internal/config"
 	"go-agent/internal/consts"
 	"go-agent/internal/llm"
+	"go-agent/internal/utils"
 
 	"github.com/anthropics/anthropic-sdk-go"
 )
@@ -37,14 +38,7 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 	slices.Reverse(messages)
 	for _, msg := range messages {
 		if msg.Role == anthropic.MessageParamRoleUser {
-			content := msg.Content
-			var contents []string
-			for _, c := range content {
-				if c.OfText != nil {
-					contents = append(contents, c.OfText.Text)
-				}
-			}
-			toAppend := strings.Join(contents, " ")
+			toAppend := utils.GetTextFromAnthropicMessageParam(msg)
 			if toAppend != "" {
 				recentContext = append(recentContext, toAppend)
 			} else {
