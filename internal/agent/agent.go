@@ -5,7 +5,9 @@ package agent
 import (
 	"fmt"
 	"go-agent/internal/compact"
+	"go-agent/internal/memory"
 	"go-agent/internal/utils"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -67,8 +69,13 @@ func compactToolUseID(toolUses []anthropic.ContentBlockUnion) (string, bool) {
 func AgentLoop(request *llm.ChatRequest) {
 	var reactiveTrials int = 0 // 压缩重试次数（网络重试已由 llm.Call 内部处理）
 
+	memoryContent := memory.LoadMemories(request.Messages)
+	var preCompress []anthropic.MessageParam
+
 	startTime := time.Now()
 	for loop := 0; ; loop++ {
+
+		preCompress = slices.Clone(request.Messages)
 
 		request.Messages = compact.ToolResultBudget(request.Messages) // L3: persist large results
 		request.Messages = compact.SnipCompact(request.Messages)      // L1: trim middle
@@ -86,11 +93,24 @@ func AgentLoop(request *llm.ChatRequest) {
 			logs.Debug("todo reminder injected")
 		}
 
+		requestMessages := request.Messages
+		if memoryContent != "" && len(request.Messages) > 0 {
+			requestMessages = slices.Clone(request.Messages)
+			last := len(requestMessages) - 1
+			if requestMessages[last].Role == anthropic.MessageParamRoleUser {
+				blocks := slices.Clone(requestMessages[last].Content)
+				blocks = append([]anthropic.ContentBlockParamUnion{
+					anthropic.NewTextBlock(memoryContent),
+				}, blocks...)
+				requestMessages[last].Content = blocks
+			}
+		}
+
 		// 创建请求：瞬时错误由 llm.Call 内部退避重试
 		resp, rerr := llm.Call(
 			anthropic.MessageNewParams{
 				MaxTokens: request.MaxTokens,
-				Messages:  request.Messages,
+				Messages:  requestMessages,
 				Model:     request.Model,
 				System:    request.SystemPrompt,
 				Tools:     request.Tools,
@@ -140,6 +160,8 @@ func AgentLoop(request *llm.ChatRequest) {
 				"loops", loop+1,
 				"duration", time.Since(startTime),
 			)
+			memory.ExtractMemories(preCompress)
+			memory.ConsolidateMemory()
 			hooks.TriggerStop(request.Messages)
 			return
 		}
