@@ -15,10 +15,7 @@ import (
 )
 
 func buildDialogue(message []anthropic.MessageParam) string {
-	start := len(message) - 10
-	if start < 0 {
-		start = 0
-	}
+	start := max(len(message)-10, 0)
 	var dialogueParts []string
 	for _, msg := range message[start:] {
 		role := msg.Role
