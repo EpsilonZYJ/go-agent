@@ -34,8 +34,8 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 
 	// collect recent user text for context
 	var recentContext []string
-	slices.Reverse(messages)
-	for _, msg := range messages {
+	for i := len(messages) - 1; i >= 0; i-- {
+		msg := messages[i]
 		if msg.Role == anthropic.MessageParamRoleUser {
 			toAppend := utils.GetTextFromAnthropicMessageParam(msg)
 			if toAppend != "" {
@@ -112,7 +112,7 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 
 	// fallback, keyword matching on name + description
 	var keywords []string
-	for _, rc := range strings.Fields(strings.ToLower(recent)) {
+	for rc := range strings.FieldsSeq(strings.ToLower(recent)) {
 		if utf8.RuneCountInString(rc) > 3 {
 			keywords = append(keywords, rc)
 		}
