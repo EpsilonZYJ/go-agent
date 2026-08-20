@@ -163,8 +163,7 @@ func AgentLoop(request *llm.ChatRequest) {
 				"loops", loop+1,
 				"duration", time.Since(startTime),
 			)
-			memory.ExtractMemories(preCompress)
-			memory.ConsolidateMemory()
+			memory.EnqueueExtraction(preCompress)
 			hooks.TriggerStop(request.Messages)
 			return
 		}

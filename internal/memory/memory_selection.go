@@ -131,6 +131,8 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 }
 
 func LoadMemories(messages []anthropic.MessageParam) string {
+	memFileMu.Lock()
+	defer memFileMu.Unlock()
 	selectedFiles := selectRelevantMemories(messages, consts.MaxRelevantMemoriesToSelect)
 	if len(selectedFiles) <= 0 {
 		return ""

@@ -5,6 +5,7 @@ go 1.26
 require (
 	github.com/anthropics/anthropic-sdk-go v1.56.0
 	github.com/invopop/jsonschema v0.14.0
+	go.yaml.in/yaml/v4 v4.0.0-rc.6
 )
 
 require (
@@ -16,6 +17,5 @@ require (
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
-	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 )

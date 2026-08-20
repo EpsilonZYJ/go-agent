@@ -57,6 +57,8 @@ func rebuildIndex() error {
 // ReadMemoryIndex reads the content of the memory index file MEMORY.md and returns
 // it. It returns an empty string if the file does not exist or cannot be read.
 func ReadMemoryIndex() string {
+	memFileMu.Lock()
+	defer memFileMu.Unlock()
 	if _, err := os.Stat(filepath.Join(config.Cfg.System.MemoryDir, memoryIndexFilename)); errors.Is(err, os.ErrNotExist) {
 		return ""
 	}

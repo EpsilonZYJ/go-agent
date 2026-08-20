@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"go-agent/internal/memory"
 	"go-agent/internal/system"
 	"os"
 	"strings"
@@ -87,6 +88,7 @@ func main() {
 		os.Exit(consts.ExitRegisterError)
 	}
 	hooks.RegisterBuiltinObservers()
+	memory.StartMemoryWorker()
 
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {
@@ -103,6 +105,7 @@ func main() {
 			continue
 		} else if query == "/exit" {
 			logs.Info("user requested exit")
+			memory.FlushMemories()
 			fmt.Println("Bye!")
 			break
 		}
