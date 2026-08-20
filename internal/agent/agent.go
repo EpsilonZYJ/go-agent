@@ -67,6 +67,7 @@ func compactToolUseID(toolUses []anthropic.ContentBlockUnion) (string, bool) {
 // results back to the message history until the conversation ends or an unrecoverable
 // error occurs.
 func AgentLoop(request *llm.ChatRequest) {
+	RoundSinceTodoSetZero()
 	var reactiveTrials int = 0 // 压缩重试次数（网络重试已由 llm.Call 内部处理）
 
 	memoryContent := memory.LoadMemories(request.Messages)

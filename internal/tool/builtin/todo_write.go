@@ -123,6 +123,12 @@ func normalizeTodos(todos any) ([]Todo, error) {
 	return result, nil
 }
 
+func ResetTodo() {
+	todoMu.Lock()
+	defer todoMu.Unlock()
+	currentTodos = []Todo{}
+}
+
 // RunTodoWrite validates and normalizes the todos input, saves the list, and returns the saved task count.
 func RunTodoWrite(todos any) (string, error) {
 	normalizedTodos, err := normalizeTodos(todos)
