@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go-agent/internal/compact"
 	"go-agent/internal/memory"
+	"go-agent/internal/tool/builtin"
 	"go-agent/internal/utils"
 	"slices"
 	"strings"
@@ -68,6 +69,7 @@ func compactToolUseID(toolUses []anthropic.ContentBlockUnion) (string, bool) {
 // error occurs.
 func AgentLoop(request *llm.ChatRequest) {
 	RoundSinceTodoSetZero()
+	builtin.ResetTodo()
 	var reactiveTrials int = 0 // 压缩重试次数（网络重试已由 llm.Call 内部处理）
 
 	memoryContent := memory.LoadMemories(request.Messages)

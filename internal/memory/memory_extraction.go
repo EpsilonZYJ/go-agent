@@ -64,7 +64,7 @@ func ExtractMemories(message []anthropic.MessageParam) {
 		0,
 	)
 	if err != nil {
-		logs.Warn("ExtractMemories: llm call error", "error", err)
+		logs.Debug("ExtractMemories: llm call error", "error", err)
 		return
 	}
 	text := utils.GetTextFromAnthropicMessageParam(resp.ToParam())
@@ -72,18 +72,18 @@ func ExtractMemories(message []anthropic.MessageParam) {
 	logs.Info("ExtractMemories: llm response", "text", text)
 	match := memExtractionRe.FindString(text)
 	if match == "" {
-		logs.Warn("ExtractMemories: no valid JSON array found in llm response")
+		logs.Debug("ExtractMemories: no valid JSON array found in llm response")
 		return
 	}
 	var items []extractedMemory
 	if err := json.Unmarshal([]byte(match), &items); err != nil {
-		logs.Warn("ExtractMemories: failed to unmarshal JSON", "error", err)
+		logs.Debug("ExtractMemories: failed to unmarshal JSON", "error", err)
 		return
 	}
 	var count = 0
 	for _, mem := range items {
 		if mem.Description == "" || mem.Body == "" {
-			logs.Warn("ExtractMemories: skipping memory with empty description or body", "memory", mem)
+			logs.Debug("ExtractMemories: skipping memory with empty description or body", "memory", mem)
 			continue
 		}
 		if mem.Name == "" {
