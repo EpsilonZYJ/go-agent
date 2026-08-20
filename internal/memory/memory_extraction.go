@@ -69,7 +69,7 @@ func ExtractMemories(message []anthropic.MessageParam) {
 	}
 	text := utils.GetTextFromAnthropicMessageParam(resp.ToParam())
 	text = strings.TrimSpace(text)
-	logs.Info("ExtractMemories: llm response - ", text)
+	logs.Info("ExtractMemories: llm response", "text", text)
 	match := memExtractionRe.FindString(text)
 	if match == "" {
 		logs.Warn("ExtractMemories: no valid JSON array found in llm response")
