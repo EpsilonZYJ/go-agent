@@ -17,6 +17,10 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 )
 
+// ConsolidateMemory merges/prunes memory files once their count reaches the
+// consolidation threshold. The LLM rewrites the whole memory set (merging
+// duplicates, dropping outdated entries), then all files are replaced with
+// the consolidated result.
 func ConsolidateMemory() {
 	files := listMemoryFiles()
 	if len(files) < consts.MemoryConsolidateThreshold {

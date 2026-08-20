@@ -17,21 +17,24 @@ var (
 	memWg         sync.WaitGroup
 )
 
-// 后台 worker 不直接写终端，只把提示存入 notices；由主 goroutine 在打印下一个
-// 提示符前统一取出打印，避免异步输出打断用户正在输入的行。
+// Background workers never write to the terminal directly; they only append
+// messages to notices. The main goroutine drains and prints them right before
+// showing the next prompt, so async output can't interrupt the line the user
+// is currently typing.
 var (
 	noticeMu sync.Mutex
 	notices  []string
 )
 
-// addNotice 后台只记录，不打印。
+// addNotice records a notice in the background without printing it.
 func addNotice(s string) {
 	noticeMu.Lock()
 	notices = append(notices, s)
 	noticeMu.Unlock()
 }
 
-// DrainNotices 取出并清空待显示通知；主 goroutine 在打印下一个提示符前调用。
+// DrainNotices returns and clears pending notices; the main goroutine calls
+// it right before printing the next prompt.
 func DrainNotices() []string {
 	noticeMu.Lock()
 	defer noticeMu.Unlock()
@@ -40,6 +43,8 @@ func DrainNotices() []string {
 	return out
 }
 
+// StartMemoryWorker launches (once) the background worker that consumes
+// dialogues from memTaskCh, extracting and consolidating memories.
 func StartMemoryWorker() {
 	logs.Info("Starting memory worker...")
 	memWorkerOnce.Do(func() {
@@ -55,6 +60,9 @@ func StartMemoryWorker() {
 	})
 }
 
+// EnqueueExtraction queues a conversation snapshot for background memory
+// extraction. It is a no-op when the snapshot renders to an empty dialogue,
+// and silently drops the task when the queue is full.
 func EnqueueExtraction(snapshot []anthropic.MessageParam) {
 	dialogue := buildDialogue(snapshot)
 	if dialogue == "" {
@@ -68,6 +76,7 @@ func EnqueueExtraction(snapshot []anthropic.MessageParam) {
 	}
 }
 
+// FlushMemories blocks until all queued extraction tasks have finished.
 func FlushMemories() {
 	memWg.Wait()
 }

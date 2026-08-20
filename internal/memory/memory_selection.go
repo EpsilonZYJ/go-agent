@@ -17,6 +17,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 )
 
+// strContainsAny reports whether s contains any of the given keywords.
 func strContainsAny(s string, keywords []string) bool {
 	for _, kw := range keywords {
 		if strings.Contains(s, kw) {
@@ -26,6 +27,9 @@ func strContainsAny(s string, keywords []string) bool {
 	return false
 }
 
+// selectRelevantMemories picks up to maxItems memory filenames relevant to the
+// recent conversation. It asks the LLM to choose from the memory catalog and
+// falls back to keyword matching if the LLM call or parsing fails.
 func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []string {
 	files := listMemoryFiles()
 	if len(files) <= 0 {
@@ -130,6 +134,9 @@ func selectRelevantMemories(messages []anthropic.MessageParam, maxItems int) []s
 	return selected
 }
 
+// LoadMemories returns the contents of the relevant memories wrapped in a
+// <relevant_memories> block, ready to be injected into the system prompt.
+// Returns "" when no memory is relevant.
 func LoadMemories(messages []anthropic.MessageParam) string {
 	memFileMu.Lock()
 	defer memFileMu.Unlock()

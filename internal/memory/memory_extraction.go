@@ -14,6 +14,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 )
 
+// buildDialogue renders the last 10 messages as a plain-text dialogue for prompts.
 func buildDialogue(message []anthropic.MessageParam) string {
 	start := max(len(message)-10, 0)
 	var dialogueParts []string
@@ -28,6 +29,8 @@ func buildDialogue(message []anthropic.MessageParam) string {
 	return dialogue
 }
 
+// extractFromDialogue asks the LLM to extract new memories from a dialogue
+// (deduped against existing ones) and writes them as memory files.
 func extractFromDialogue(dialogue string) {
 	if dialogue == "" {
 		return
@@ -109,6 +112,8 @@ func extractFromDialogue(dialogue string) {
 	}
 }
 
+// ExtractMemories is the synchronous variant of extractFromDialogue; it prints
+// the result to the terminal instead of queuing a background notice.
 func ExtractMemories(message []anthropic.MessageParam) {
 	dialogue := buildDialogue(message)
 	dialogue = strings.TrimSpace(dialogue)
