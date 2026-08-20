@@ -74,3 +74,35 @@ func toolResultText(tr *anthropic.ToolResultBlockParam) string {
 	}
 	return b.String()
 }
+
+func isSyntheticUserText(s string) bool {
+	s = strings.TrimSpace(s)
+	switch {
+	case strings.HasPrefix(s, "<reminder>"),
+		strings.HasPrefix(s, "[snipped"),
+		strings.HasPrefix(s, "[Compacted]"),
+		strings.HasPrefix(s, "[Reactive compact]"):
+		return true
+	}
+	return false
+}
+
+func LastUserInstruction(msgs []anthropic.MessageParam) (int, string) {
+	for i := len(msgs) - 1; i >= 0; i-- {
+		m := msgs[i]
+		if m.Role != anthropic.MessageParamRoleUser || isToolResultMessage(m) {
+			continue
+		}
+		for _, b := range m.Content {
+			if b.OfText == nil {
+				continue
+			}
+			t := strings.TrimSpace(b.OfText.Text)
+			if t == "" || isSyntheticUserText(t) {
+				continue
+			}
+			return i, t
+		}
+	}
+	return -1, ""
+}

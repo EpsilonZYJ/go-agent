@@ -106,7 +106,17 @@ func CompactHistory(msgs []anthropic.MessageParam) []anthropic.MessageParam {
 			anthropic.NewTextBlock(fmt.Sprintf("[Compacted]\n\n%s", summary)),
 		),
 	}
-	return append(head, msgs[tailStart:]...)
+	result := append(head, msgs[tailStart:]...)
+	if idx, instr := LastUserInstruction(msgs); idx >= 0 && idx < tailStart {
+		result = append(result, anthropic.NewUserMessage(
+			anthropic.NewTextBlock(fmt.Sprintf(""+
+				"[system-note] The above history has been compressed. The user’s latest and current sole objective is: \n%s\n"+
+				"Please continue completing it; if it is unrelated to the topic before compression, please set aside the old task and directly address it.",
+				instr,
+			)),
+		))
+	}
+	return result
 }
 
 // ReactiveCompact API 出错时进行压缩
@@ -128,5 +138,15 @@ func ReactiveCompact(msgs []anthropic.MessageParam) []anthropic.MessageParam {
 			),
 		),
 	}
-	return append(head, msgs[tailStart:]...)
+	result := append(head, msgs[tailStart:]...)
+	if idx, instr := LastUserInstruction(msgs); idx >= 0 && idx < tailStart {
+		result = append(result, anthropic.NewUserMessage(
+			anthropic.NewTextBlock(fmt.Sprintf(""+
+				"[system-note] The above history has been compressed. The user’s latest and current sole objective is: \n%s\n"+
+				"Please continue completing it; if it is unrelated to the topic before compression, please set aside the old task and directly address it.",
+				instr,
+			)),
+		))
+	}
+	return result
 }
