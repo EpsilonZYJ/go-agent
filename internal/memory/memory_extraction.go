@@ -108,7 +108,7 @@ func extractFromDialogue(dialogue string) {
 		}
 	}
 	if count > 0 {
-		fmt.Printf("\n\033[33m[Memory: extracted %d new memories]\033[0m\n", count)
+		addNotice(fmt.Sprintf("[Memory: extracted %d new memories]", count))
 	}
 }
 

@@ -92,6 +92,9 @@ func main() {
 
 	fmt.Println("Welcome to Go Agent! Type `/exit` to quit.")
 	for {
+		for _, n := range memory.DrainNotices() {
+			fmt.Printf("\033[33m%s\033[0m\n", n)
+		}
 		fmt.Printf("\033[36mUser >> \033[0m")
 
 		query, err := session.ReadLine()

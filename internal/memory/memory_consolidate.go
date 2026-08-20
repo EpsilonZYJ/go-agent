@@ -95,5 +95,5 @@ func ConsolidateMemory() {
 			continue
 		}
 	}
-	fmt.Printf("\n\033[33m[Memory: consolidated %d → %d memories]\033[0m\n", len(files), len(items))
+	addNotice(fmt.Sprintf("[Memory: consolidated %d → %d memories]", len(files), len(items)))
 }
