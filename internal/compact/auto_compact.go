@@ -108,6 +108,7 @@ func CompactHistory(msgs []anthropic.MessageParam) []anthropic.MessageParam {
 	}
 	result := append(head, msgs[tailStart:]...)
 	if idx, instr := LastUserInstruction(msgs); idx >= 0 && idx < tailStart {
+		logs.Debug("compact: pinned goal", "instr", instr)
 		result = append(result, anthropic.NewUserMessage(
 			anthropic.NewTextBlock(fmt.Sprintf(""+
 				"[system-note] The above history has been compressed. The user’s latest and current sole objective is: \n%s\n"+
@@ -140,6 +141,7 @@ func ReactiveCompact(msgs []anthropic.MessageParam) []anthropic.MessageParam {
 	}
 	result := append(head, msgs[tailStart:]...)
 	if idx, instr := LastUserInstruction(msgs); idx >= 0 && idx < tailStart {
+		logs.Debug("compact: pinned goal", "instr", instr)
 		result = append(result, anthropic.NewUserMessage(
 			anthropic.NewTextBlock(fmt.Sprintf(""+
 				"[system-note] The above history has been compressed. The user’s latest and current sole objective is: \n%s\n"+
