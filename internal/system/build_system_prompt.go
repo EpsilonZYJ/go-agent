@@ -38,12 +38,9 @@ func (c *promptCache) getSystemPrompt(ctx promptContext) string {
 		return c.lastPrompt
 	}
 	c.lastKey = key
-	c.lastPrompt = assembleSystemPrompt(ctx)
 
-	loaded := []string{"identity", "tools", "workspace"}
-	if ctx.Memories != "" {
-		loaded = append(loaded, "memory")
-	}
+	prompt, loaded := assembleSystemPrompt(ctx)
+	c.lastPrompt = prompt
 	fmt.Printf("  \033[32m[assembled] sections: %s\033[0m\n", strings.Join(loaded, ", "))
 	return c.lastPrompt
 }
@@ -59,22 +56,28 @@ var promptSections = map[string]string{
 	"skills": "Skills available:\n{SKILLS}\nUse load_skill to get full details when needed.",
 }
 
-func assembleSystemPrompt(context promptContext) string {
-	sections := []string{
-		promptSections["identity"],
-		promptSections["tools"],
-		strings.ReplaceAll(promptSections["workspace"], "{WORKDIR}", context.Workspace),
-		promptSections["workflow"],
-		promptSections["memory"],
+func assembleSystemPrompt(context promptContext) (string, []string) {
+	type namedSection struct{ name, content string }
+	sections := []namedSection{
+		{"identity", promptSections["identity"]},
+		{"tools", promptSections["tools"]},
+		{"workspace", strings.ReplaceAll(promptSections["workspace"], "{WORKDIR}", context.Workspace)},
+		{"workflow", promptSections["workflow"]},
+		{"memory", promptSections["memory"]},
 	}
-
 	if context.Memories != "" {
-		sections = append(sections, fmt.Sprintf("Relevant memories:\n%s", context.Memories))
+		sections = append(sections, namedSection{"memory-content", fmt.Sprintf("Relevant memories:\n%s", context.Memories)})
 	}
 	sections = append(sections,
-		strings.ReplaceAll(promptSections["skills"], "{SKILLS}", skill.ListSkills()))
+		namedSection{"skills", strings.ReplaceAll(promptSections["skills"], "{SKILLS}", skill.ListSkills())})
 
-	return strings.TrimSpace(strings.Join(sections, "\n\n"))
+	names := make([]string, 0, len(sections))
+	parts := make([]string, 0, len(sections))
+	for _, s := range sections {
+		names = append(names, s.name)
+		parts = append(parts, s.content)
+	}
+	return strings.TrimSpace(strings.Join(parts, "\n\n")), names
 }
 
 // deriveContext 从真实状态派生 prompt 上下文：工作目录与记忆索引。
