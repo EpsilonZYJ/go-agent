@@ -3,8 +3,6 @@
 package system
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -21,83 +19,74 @@ type promptCache struct {
 	lastPrompt string
 }
 
-func marshalKey(ctx map[string]string) string {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	_ = enc.Encode(ctx)
-	return buf.String()
+type promptContext struct {
+	Workspace    string
+	Memories     string
+	EnabledTools []string
 }
 
-func (c *promptCache) Get(ctx map[string]string) string {
-	snapshot := make(map[string]string, len(ctx))
-	for k, v := range ctx {
-		snapshot[k] = v
-	}
+var pc promptCache
 
-	key := marshalKey(snapshot)
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (c *promptCache) getSystemPrompt(ctx promptContext) string {
+	key := fmt.Sprintf("%s|%s|%v", ctx.Workspace, ctx.Memories, ctx.EnabledTools)
 
 	if key == c.lastKey && c.lastPrompt != "" {
 		fmt.Printf("  \033[90m[cache hit] system prompt unchanged\033[0m")
 		return c.lastPrompt
 	}
 	c.lastKey = key
-	c.lastPrompt = assembleSystemPrompt(snapshot)
+	c.lastPrompt = assembleSystemPrompt(ctx)
 
 	loaded := []string{"identity", "tools", "workspace"}
-	if ctx["memories"] != "" {
+	if ctx.Memories != "" {
 		loaded = append(loaded, "memory")
 	}
 	fmt.Printf("  \033[32m[assembled] sections: %s\033[0m", strings.Join(loaded, ", "))
 	return c.lastPrompt
 }
 
-func promptSections() map[string]string {
-	return map[string]string{
-		"identity":  "You are a coding agent. Act, don't explain.",
-		"tools":     "Available tools: bash, read_file, write_file.",
-		"workspace": fmt.Sprintf("Working directory: %s", config.Cfg.System.CurDir),
-		"memory":    "Relevant memories are injected below when available.",
-	}
+var promptSections = map[string]string{
+	"identity":  "You are a coding agent. Act, don't explain.",
+	"tools":     "Available tools: bash, read_file, write_file.",
+	"workspace": "Working directory: ",
+	"memory":    "Relevant memories are injected below when available.",
+	"skills":    "load_skill to get full details when needed. Skills available:\n",
 }
 
-func assembleSystemPrompt(context map[string]string) string {
+func assembleSystemPrompt(context promptContext) string {
 	var sections []string
 
-	ps := promptSections()
-	sections = append(sections, ps["identity"])
-	sections = append(sections, ps["tools"])
-	sections = append(sections, ps["workspace"])
+	sections = append(sections, promptSections["identity"])
+	sections = append(sections, promptSections["tools"])
+	sections = append(sections, promptSections["workspace"]+config.Cfg.System.CurDir)
 
-	memories := context["memories"]
+	memories := context.Memories
 	if memories != "" {
 		sections = append(sections, fmt.Sprintf("Relevant memories:\n%s", memories))
 	}
+	sections = append(sections, promptSections["skills"]+skill.ListSkills()+"\n")
 
-	return strings.Join(sections, "\n\n")
+	return strings.TrimSpace(strings.Join(sections, "\n\n"))
+}
+
+func UpdateContext(context map[string]string) map[string]string {
+	memories := ""
+	memIndex := memory.ReadMemoryIndex()
+	if memIndex != "" {
+		memories = memIndex
+	}
+	return map[string]string{
+		"workspace": string(config.Cfg.System.CurDir),
+		"memories":  memories,
+	}
 }
 
 func BuildSystemPrompt() string {
-	memIndex := memory.ReadMemoryIndex()
-	var memoriesSection string
-	if memIndex == "" {
-		memoriesSection = ""
-	} else {
-		memoriesSection = fmt.Sprintf("\n\nMemories available:\n%s", memIndex)
-	}
-	return strings.TrimSpace(
-		fmt.Sprintf(
-			"You are a coding agent at %s. "+
-				"%s"+
-				"Relevant memories are injected below. Respect user preferences from memory.\n"+
-				"When the user says 'remember' or expresses a clear preference, extract it as a memory. "+
-				"Before starting any multi-step task, use todo_write to plan your steps. Update status as you go. "+
-				"For complex sub-problems, use the task tool to spawn a subagent. "+
-				"Skills available:\n%s\nUse load_skill to get full details when needed.",
-			config.Cfg.System.CurDir, memoriesSection, skill.ListSkills(),
-		),
+	return pc.getSystemPrompt(
+		promptContext{
+			Workspace: config.Cfg.System.CurDir,
+			Memories:  memory.ReadMemoryIndex(),
+		},
 	)
 }
 
