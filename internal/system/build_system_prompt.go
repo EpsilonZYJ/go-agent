@@ -28,10 +28,13 @@ type promptContext struct {
 var pc promptCache
 
 func (c *promptCache) getSystemPrompt(ctx promptContext) string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	key := fmt.Sprintf("%s|%s|%v", ctx.Workspace, ctx.Memories, ctx.EnabledTools)
 
 	if key == c.lastKey && c.lastPrompt != "" {
-		fmt.Printf("  \033[90m[cache hit] system prompt unchanged\033[0m")
+		fmt.Printf("  \033[90m[cache hit] system prompt unchanged\033[0m\n")
 		return c.lastPrompt
 	}
 	c.lastKey = key
@@ -41,53 +44,49 @@ func (c *promptCache) getSystemPrompt(ctx promptContext) string {
 	if ctx.Memories != "" {
 		loaded = append(loaded, "memory")
 	}
-	fmt.Printf("  \033[32m[assembled] sections: %s\033[0m", strings.Join(loaded, ", "))
+	fmt.Printf("  \033[32m[assembled] sections: %s\033[0m\n", strings.Join(loaded, ", "))
 	return c.lastPrompt
 }
 
 var promptSections = map[string]string{
 	"identity":  "You are a coding agent. Act, don't explain.",
 	"tools":     "Available tools: bash, read_file, write_file.",
-	"workspace": "Working directory: ",
-	"memory":    "Relevant memories are injected below when available.",
-	"skills":    "load_skill to get full details when needed. Skills available:\n",
+	"workspace": "Working directory: {WORKDIR}",
+	"workflow": "Before starting any multi-step task, use todo_write to plan your steps. Update status as you go. " +
+		"For complex sub-problems, use the task tool to spawn a subagent.",
+	"memory": "Relevant memories are injected below. Respect user preferences from memory.\n" +
+		"When the user says 'remember' or expresses a clear preference, extract it as a memory.",
+	"skills": "Skills available:\n{SKILLS}\nUse load_skill to get full details when needed.",
 }
 
 func assembleSystemPrompt(context promptContext) string {
-	var sections []string
-
-	sections = append(sections, promptSections["identity"])
-	sections = append(sections, promptSections["tools"])
-	sections = append(sections, promptSections["workspace"]+config.Cfg.System.CurDir)
-
-	memories := context.Memories
-	if memories != "" {
-		sections = append(sections, fmt.Sprintf("Relevant memories:\n%s", memories))
+	sections := []string{
+		promptSections["identity"],
+		promptSections["tools"],
+		strings.ReplaceAll(promptSections["workspace"], "{WORKDIR}", context.Workspace),
+		promptSections["workflow"],
+		promptSections["memory"],
 	}
-	sections = append(sections, promptSections["skills"]+skill.ListSkills()+"\n")
+
+	if context.Memories != "" {
+		sections = append(sections, fmt.Sprintf("Relevant memories:\n%s", context.Memories))
+	}
+	sections = append(sections,
+		strings.ReplaceAll(promptSections["skills"], "{SKILLS}", skill.ListSkills()))
 
 	return strings.TrimSpace(strings.Join(sections, "\n\n"))
 }
 
-func UpdateContext(context map[string]string) map[string]string {
-	memories := ""
-	memIndex := memory.ReadMemoryIndex()
-	if memIndex != "" {
-		memories = memIndex
-	}
-	return map[string]string{
-		"workspace": string(config.Cfg.System.CurDir),
-		"memories":  memories,
+// deriveContext 从真实状态派生 prompt 上下文：工作目录与记忆索引。
+func deriveContext() promptContext {
+	return promptContext{
+		Workspace: config.Cfg.System.CurDir,
+		Memories:  memory.ReadMemoryIndex(),
 	}
 }
 
 func BuildSystemPrompt() string {
-	return pc.getSystemPrompt(
-		promptContext{
-			Workspace: config.Cfg.System.CurDir,
-			Memories:  memory.ReadMemoryIndex(),
-		},
-	)
+	return pc.getSystemPrompt(deriveContext())
 }
 
 func BuildSubSystemPrompt() string {
